@@ -1,0 +1,440 @@
+# Global values
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# PostgreSQL
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "changeme"
+    database: "ex_platform_db"
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+
+# Redis
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# RabbitMQ
+rabbitmq:
+  enabled: true
+  auth:
+    username: guest
+    password: guest
+  persistence:
+    enabled: true
+    size: 20Gi
+
+# Kafka
+kafka:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 50Gi
+  zookeeper:
+    persistence:
+      enabled: true
+      size: 20Gi
+
+# Neo4j
+neo4j:
+  enabled: true
+  auth:
+    neo4j:
+      password: "changeme"
+  core:
+    persistentVolume:
+      size: 50Gi
+
+# Prometheus
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      enabled: true
+      size: 50Gi
+
+# Grafana
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: admin
+  persistence:
+    enabled: true
+    size: 10Gi
+
+# Jaeger
+jaeger:
+  enabled: true
+  storage:
+    type: elasticsearch
+    elasticsearch:
+      nodeCount: 1
+
+# Loki
+loki:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 50Gi
+
+# Vault
+vault:
+  enabled: true
+  server:
+    dev:
+      enabled: true
+
+# Traefik
+traefik:
+  enabled: true
+  ingressRoute:
+    dashboard:
+      enabled: true
+
+# Identity Service
+identityService:
+  enabled: true
+  image:
+    repository: ex-platform/identity-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  env:
+    - name: DATABASE_HOST
+      value: "postgresql"
+    - name: DATABASE_NAME
+      value: "ex_platform_db"
+    - name: DATABASE_USER
+      value: "postgres"
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: postgresql
+          key: postgres-password
+
+# Organization Service
+organizationService:
+  enabled: true
+  image:
+    repository: ex-platform/organization-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Survey Engine Service
+surveyEngineService:
+  enabled: true
+  image:
+    repository: ex-platform/survey-engine-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 3
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 300m
+      memory: 768Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+# AI/ML Service
+aiMlService:
+  enabled: true
+  image:
+    repository: ex-platform/ai-ml-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+  nodeSelector:
+    accelerator: gpu
+
+# Action Planner Service
+actionPlannerService:
+  enabled: true
+  image:
+    repository: ex-platform/action-planner-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Reporting Service
+reportingService:
+  enabled: true
+  image:
+    repository: ex-platform/reporting-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 300m
+      memory: 768Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+# Workflow Automation Service
+workflowAutomationService:
+  enabled: true
+  image:
+    repository: ex-platform/workflow-automation-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Integration Marketplace Service
+integrationMarketplaceService:
+  enabled: true
+  image:
+    repository: ex-platform/integration-marketplace-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Notification Service
+notificationService:
+  enabled: true
+  image:
+    repository: ex-platform/notification-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 3
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Performance Service
+performanceService:
+  enabled: true
+  image:
+    repository: ex-platform/performance-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Feedback Service
+feedbackService:
+  enabled: true
+  image:
+    repository: ex-platform/feedback-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Blockchain Service
+blockchainService:
+  enabled: true
+  image:
+    repository: ex-platform/blockchain-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Frontend Service
+frontendService:
+  enabled: true
+  image:
+    repository: ex-platform/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 3
+  service:
+    type: ClusterIP
+    port: 3000
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# n8n
+n8n:
+  enabled: true
+  image:
+    repository: n8nio/n8n
+    tag: latest
+  persistence:
+    enabled: true
+    size: 10Gi
+

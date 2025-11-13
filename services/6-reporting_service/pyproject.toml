@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "6_reporting_service"
+version = "0.1.0"
+description = "Service description"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+Django = "^4.2"
+djangorestframework = "^3.14"
+psycopg2-binary = "^2.9"
+python-decouple = "^3.8"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

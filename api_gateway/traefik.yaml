@@ -1,0 +1,213 @@
+api:
+  dashboard: true
+  insecure: true
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      tlschallenge: {}
+      email: admin@example.com
+      storage: /letsencrypt/acme.json
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  file:
+    filename: /traefik.yaml
+    watch: true
+
+http:
+  middlewares:
+    auth:
+      basicAuth:
+        users:
+          - "admin:$apr1$xxxxx"  # Change this password hash
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+    cors:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - OPTIONS
+          - PUT
+          - POST
+          - DELETE
+        accessControlAllowOriginList:
+          - "http://localhost:3000"
+          - "https://app.example.com"
+        accessControlMaxAge: 100
+        addVaryHeader: true
+
+  routers:
+    identity-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/identity`)"
+      service: identity-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    organization-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/organization`)"
+      service: organization-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    survey-engine-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/survey`)"
+      service: survey-engine-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    ai-ml-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/ai`)"
+      service: ai-ml-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    action-planner-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/action`)"
+      service: action-planner-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    reporting-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/reporting`)"
+      service: reporting-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    workflow-automation-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/workflow`)"
+      service: workflow-automation-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    integration-marketplace-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/integration`)"
+      service: integration-marketplace-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    notification-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/notification`)"
+      service: notification-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    performance-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/performance`)"
+      service: performance-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    feedback-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/feedback`)"
+      service: feedback-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+    blockchain-service:
+      rule: "Host(`api.example.com`) && PathPrefix(`/api/v1/blockchain`)"
+      service: blockchain-service
+      middlewares:
+        - rate-limit
+        - cors
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    identity-service:
+      loadBalancer:
+        servers:
+          - url: "http://identity-service:8000"
+    organization-service:
+      loadBalancer:
+        servers:
+          - url: "http://organization-service:8000"
+    survey-engine-service:
+      loadBalancer:
+        servers:
+          - url: "http://survey-engine-service:8000"
+    ai-ml-service:
+      loadBalancer:
+        servers:
+          - url: "http://ai-ml-service:8000"
+    action-planner-service:
+      loadBalancer:
+        servers:
+          - url: "http://action-planner-service:8000"
+    reporting-service:
+      loadBalancer:
+        servers:
+          - url: "http://reporting-service:8000"
+    workflow-automation-service:
+      loadBalancer:
+        servers:
+          - url: "http://workflow-automation-service:8000"
+    integration-marketplace-service:
+      loadBalancer:
+        servers:
+          - url: "http://integration-marketplace-service:8000"
+    notification-service:
+      loadBalancer:
+        servers:
+          - url: "http://notification-service:8000"
+    performance-service:
+      loadBalancer:
+        servers:
+          - url: "http://performance-service:8000"
+    feedback-service:
+      loadBalancer:
+        servers:
+          - url: "http://feedback-service:8000"
+    blockchain-service:
+      loadBalancer:
+        servers:
+          - url: "http://blockchain-service:8000"

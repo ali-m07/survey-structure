@@ -1,0 +1,89 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'ex-platform'
+    environment: 'production'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'identity-service'
+    static_configs:
+      - targets: ['identity-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'organization-service'
+    static_configs:
+      - targets: ['organization-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'survey-engine-service'
+    static_configs:
+      - targets: ['survey-engine-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'ai-ml-service'
+    static_configs:
+      - targets: ['ai-ml-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'action-planner-service'
+    static_configs:
+      - targets: ['action-planner-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'reporting-service'
+    static_configs:
+      - targets: ['reporting-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'workflow-automation-service'
+    static_configs:
+      - targets: ['workflow-automation-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'integration-marketplace-service'
+    static_configs:
+      - targets: ['integration-marketplace-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'performance-service'
+    static_configs:
+      - targets: ['performance-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'feedback-service'
+    static_configs:
+      - targets: ['feedback-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'blockchain-service'
+    static_configs:
+      - targets: ['blockchain-service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
+

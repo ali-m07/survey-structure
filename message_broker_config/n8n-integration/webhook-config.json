@@ -1,0 +1,131 @@
+{
+  "webhooks": {
+    "survey-invitation": {
+      "path": "/webhook/survey-invitation",
+      "method": "POST",
+      "description": "Webhook for sending survey invitations",
+      "expected_payload": {
+        "event_type": "survey_invitation",
+        "survey_id": "string",
+        "recipient_email": "string",
+        "survey_link": "string",
+        "tenant_id": "string"
+      }
+    },
+    "survey-completion": {
+      "path": "/webhook/survey-completion",
+      "method": "POST",
+      "description": "Webhook for survey completion notifications",
+      "expected_payload": {
+        "event_type": "survey_completion",
+        "survey_id": "string",
+        "participant_id": "string",
+        "tenant_id": "string"
+      }
+    },
+    "survey-reminder": {
+      "path": "/webhook/survey-reminder",
+      "method": "POST",
+      "description": "Webhook for sending survey reminders",
+      "expected_payload": {
+        "event_type": "survey_reminder",
+        "survey_id": "string",
+        "recipient_email": "string",
+        "survey_link": "string",
+        "tenant_id": "string"
+      }
+    },
+    "ai-suggestions": {
+      "path": "/webhook/ai-suggestions",
+      "method": "POST",
+      "description": "Webhook for AI-generated suggestions",
+      "expected_payload": {
+        "event_type": "ai_suggestions",
+        "user_id": "string",
+        "suggestions": "array",
+        "tenant_id": "string"
+      }
+    },
+    "workflow-trigger": {
+      "path": "/webhook/workflow-trigger",
+      "method": "POST",
+      "description": "Webhook for triggering custom workflows",
+      "expected_payload": {
+        "event_type": "workflow_trigger",
+        "workflow_name": "string",
+        "trigger_data": "object",
+        "tenant_id": "string"
+      }
+    },
+    "notification": {
+      "path": "/webhook/notification",
+      "method": "POST",
+      "description": "General notification webhook",
+      "expected_payload": {
+        "event_type": "notification",
+        "channel": "string",
+        "recipient": "string",
+        "message": "string",
+        "metadata": "object"
+      }
+    }
+  },
+  "workflows": {
+    "survey-invitation-email": {
+      "name": "Survey Invitation Email",
+      "description": "Sends email invitation when survey is created",
+      "trigger": "webhook",
+      "webhook_path": "/webhook/survey-invitation",
+      "steps": [
+        {
+          "type": "email",
+          "config": {
+            "to": "{{ $json.recipient_email }}",
+            "subject": "Survey Invitation",
+            "body": "You have been invited to participate in a survey. Click here: {{ $json.survey_link }}"
+          }
+        }
+      ]
+    },
+    "survey-completion-notification": {
+      "name": "Survey Completion Notification",
+      "description": "Sends notification when survey is completed",
+      "trigger": "webhook",
+      "webhook_path": "/webhook/survey-completion",
+      "steps": [
+        {
+          "type": "slack",
+          "config": {
+            "channel": "#surveys",
+            "message": "Survey {{ $json.survey_id }} completed by participant {{ $json.participant_id }}"
+          }
+        }
+      ]
+    },
+    "ai-suggestions-workflow": {
+      "name": "AI Suggestions Workflow",
+      "description": "Processes and sends AI-generated suggestions",
+      "trigger": "webhook",
+      "webhook_path": "/webhook/ai-suggestions",
+      "steps": [
+        {
+          "type": "http",
+          "config": {
+            "url": "http://ai-ml-service:8000/api/v1/insights/generate",
+            "method": "POST",
+            "body": "{{ $json.suggestions }}"
+          }
+        },
+        {
+          "type": "email",
+          "config": {
+            "to": "{{ $json.user_id }}",
+            "subject": "AI Suggestions",
+            "body": "{{ $json.suggestions }}"
+          }
+        }
+      ]
+    }
+  }
+}
+

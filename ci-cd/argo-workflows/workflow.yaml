@@ -1,0 +1,99 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ex-platform-deployment
+  namespace: argocd
+spec:
+  entrypoint: deploy-platform
+  templates:
+  - name: deploy-platform
+    steps:
+    - - name: build-images
+        template: build
+    - - name: run-tests
+        template: test
+    - - name: security-scan
+        template: security-scan
+    - - name: deploy-staging
+        template: deploy
+        arguments:
+          parameters:
+          - name: environment
+            value: staging
+    - - name: run-integration-tests
+        template: integration-test
+        arguments:
+          parameters:
+          - name: environment
+            value: staging
+    - - name: deploy-production
+        template: deploy
+        arguments:
+          parameters:
+          - name: environment
+            value: production
+
+  - name: build
+    script:
+      image: docker:latest
+      command: [sh]
+      source: |
+        docker build -t ex-platform/identity-service:latest ./services/1-identity_service
+        docker build -t ex-platform/organization-service:latest ./services/2-organization_service
+        docker build -t ex-platform/survey-engine-service:latest ./services/3-survey_engine_service
+        docker build -t ex-platform/ai-ml-service:latest ./services/4-ai_ml_service
+        docker build -t ex-platform/action-planner-service:latest ./services/5-action_planner_service
+        docker build -t ex-platform/reporting-service:latest ./services/6-reporting_service
+        docker build -t ex-platform/workflow-automation-service:latest ./services/7-workflow_automation_service
+        docker build -t ex-platform/integration-marketplace-service:latest ./services/8-integration_marketplace_service
+        docker build -t ex-platform/notification-service:latest ./services/9-notification_service
+        docker build -t ex-platform/performance-service:latest ./services/10-performance_service
+        docker build -t ex-platform/feedback-service:latest ./services/11-feedback_service
+        docker build -t ex-platform/blockchain-service:latest ./services/12-blockchain_service
+
+  - name: test
+    script:
+      image: python:3.11
+      command: [sh]
+      source: |
+        pip install poetry pytest
+        cd services/1-identity_service && poetry install && poetry run pytest
+        cd ../2-organization_service && poetry install && poetry run pytest
+        cd ../3-survey_engine_service && poetry install && poetry run pytest
+        cd ../4-ai_ml_service && poetry install && poetry run pytest
+
+  - name: security-scan
+    script:
+      image: aquasec/trivy:latest
+      command: [sh]
+      source: |
+        trivy image --exit-code 1 --severity HIGH,CRITICAL ex-platform/identity-service:latest
+        trivy image --exit-code 1 --severity HIGH,CRITICAL ex-platform/organization-service:latest
+
+  - name: deploy
+    inputs:
+      parameters:
+      - name: environment
+    script:
+      image: bitnami/kubectl:latest
+      command: [sh]
+      source: |
+        helm upgrade --install ex-platform ./k8s/charts \
+          --namespace ex-platform \
+          --values ./k8s/charts/values-{{inputs.parameters.environment}}.yaml
+
+  - name: integration-test
+    inputs:
+      parameters:
+      - name: environment
+    script:
+      image: curlimages/curl:latest
+      command: [sh]
+      source: |
+        # Wait for services to be ready
+        sleep 30
+        # Run integration tests
+        curl -f http://identity-service:8000/health
+        curl -f http://organization-service:8000/health
+        curl -f http://survey-engine-service:8000/health
+

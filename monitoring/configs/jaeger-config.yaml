@@ -1,0 +1,23 @@
+collector:
+  otlp:
+    enabled: true
+    grpc:
+      endpoint: "0.0.0.0:4317"
+    http:
+      endpoint: "0.0.0.0:4318"
+
+storage:
+  type: badger
+  badger:
+    directory: /badger
+    spanStoreTTL: 168h
+
+query:
+  basePath: /
+  staticAssets: /static
+
+agent:
+  http:
+    server:
+      hostPort: ":14268"
+
