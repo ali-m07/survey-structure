@@ -128,3 +128,5 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 if not DEBUG and SECRET_KEY == "django-insecure-survey-service-change-in-production":
     raise RuntimeError("Set SECRET_KEY in production.")
+
+EMAIL_TIMEOUT = 10

@@ -61,12 +61,58 @@ def export(survey,params):
         import arabic_reshaper
         from bidi.algorithm import get_display
         pdfmetrics.registerFont(TTFont('NotoArabic',str(Path(__file__).resolve().parent.parent/'assets'/'NotoSansArabic.ttf')))
-        output=io.BytesIO();pdf=canvas.Canvas(output);pdf.setFont('NotoArabic',12);y=790
-        for line in [survey.title]+[f"Question {q.id}: {q.question_text}" for q in qs]+['Responses: '+str(len(rows))]+[json.dumps(row,ensure_ascii=False) for row in rows]:
-            for start in range(0,len(line),95):
-                pdf.drawString(35,y,get_display(arabic_reshaper.reshape(line[start:start+95])));y-=18
-                if y<40: pdf.showPage();pdf.setFont('NotoArabic',12);y=790
-        pdf.save();response=HttpResponse(output.getvalue(),content_type='application/pdf')
+        output=io.BytesIO();pdf=canvas.Canvas(output,pagesize=(595,842));y=780;page=1
+        def arabic(text): return bool(re.search(r'[\u0600-\u06ff\ufb50-\ufeff]',text))
+        def font(char): return 'NotoArabic' if arabic(char) else 'Helvetica'
+        def visual(text): return get_display(arabic_reshaper.reshape(str(text)))
+        def width(text,size): return sum(pdfmetrics.stringWidth(c,font(c),size) for c in visual(text))
+        def footer():
+            pdf.setFont('Helvetica',9);pdf.setFillColorRGB(.4,.4,.4);pdf.drawRightString(550,25,f'{page}');pdf.setFillColorRGB(0,0,0)
+        def line(text,size=11):
+            nonlocal y,page
+            if y<55:
+                footer();pdf.showPage();page+=1;y=780
+            prepared=visual(text);x=550-width(text,size) if arabic(text) else 45
+            for char in prepared:
+                family=font(char);pdf.setFont(family,size);pdf.drawString(x,y,char);x+=pdfmetrics.stringWidth(char,family,size)
+            y-=size+9
+        def paragraph(text,size=11):
+            words=str(text).split();current=''
+            for word in words:
+                candidate=(current+' '+word).strip()
+                if current and width(candidate,size)>505: line(current,size);current=word
+                else: current=candidate
+            if current: line(current,size)
+        def answer(value):
+            if value is True: return 'بله'
+            if value is False: return 'خیر'
+            if isinstance(value,list): return '، '.join(str(v) for v in value)
+            if isinstance(value,dict): return '؛ '.join(f'{k}: {v}' for k,v in value.items())
+            return str(value)
+        paragraph(survey.title,18)
+        paragraph('گزارش پاسخ‌های پرسشنامه',13)
+        paragraph('تعداد پاسخ‌ها: '+str(len(rows)))
+        from django.utils import timezone
+        paragraph('تاریخ گزارش: '+timezone.now().strftime('%Y-%m-%d'))
+        y-=10
+        report=analytics(survey,params)
+        for item in report['questions']:
+            paragraph(item['text'],13)
+            paragraph('تعداد پاسخ: '+str(item['count']))
+            if 'average' in item: paragraph('میانگین: '+str(round(item['average'],2)))
+            if 'nps' in item: paragraph('NPS: '+str(round(item['nps'],2)))
+            for value,count in item['distribution'].items():
+                value='بله' if value=='True' else 'خیر' if value=='False' else value
+                paragraph(value+' — '+str(count))
+            y-=8
+        paragraph('جزئیات پاسخ‌ها',14)
+        for submission in filtered(survey,params).prefetch_related('answers'):
+            paragraph('پاسخ شماره '+str(submission.id)+' | '+submission.submitted_at.strftime('%Y-%m-%d %H:%M'),12)
+            values={a.question_id:a.answer_value for a in submission.answers.all()}
+            for q in qs:
+                if q.id in values: paragraph(q.question_text+': '+answer(values[q.id]))
+            y-=8
+        footer();pdf.save();response=HttpResponse(output.getvalue(),content_type='application/pdf')
     elif kind == 'csv':
         output=io.StringIO();writer=csv.writer(output);writer.writerow(headers)
         for row in rows: writer.writerow(["'"+v if isinstance(v,str) and v.startswith(('=','+','-','@')) else v for v in row])

@@ -15,6 +15,9 @@ class QuestionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Invalid section.')
         if section:
             editable(section.survey)
+        rules=attrs.get('validation_rules',getattr(self.instance,'validation_rules',{}))
+        options=attrs.get('options',getattr(self.instance,'options',[]))
+        if not isinstance(rules,dict) or not isinstance(options,list) or any(not isinstance(v,str) for v in options): raise serializers.ValidationError('Settings must be an object and options an array of text.')
         kind = attrs.get('question_type', getattr(self.instance, 'question_type', None))
         if kind in ('voice', 'file_upload'):
             raise serializers.ValidationError('File and voice uploads are not supported.')

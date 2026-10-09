@@ -97,3 +97,26 @@ class SurveySecurityTests(TestCase):
         sent=self.client.post(self.base+f"participants/{response.data['id']}/send_invitation/")
         self.assertEqual(sent.status_code,200)
         self.assertEqual(sent.data['status'],'test_transport')
+
+    def test_last_admin_is_preserved(self):
+        self.auth()
+        member=Membership.objects.get(user=self.user,tenant_id='a')
+        self.assertEqual(self.client.delete(self.base+f'members/{member.id}/').status_code,400)
+        self.assertEqual(self.client.post(self.base+'members/',{'username':'owner','role':'viewer'},format='json').status_code,400)
+    def test_webhook_queue_and_mock_delivery(self):
+        from unittest.mock import patch,Mock
+        from app.surveys.models import Webhook,WebhookDelivery
+        from app.surveys.services.webhooks import deliver
+        self.publish()
+        hook=Webhook.objects.create(survey=self.survey,url='https://hooks.example.com/receiver',secret='test-secret')
+        response=self.submit([{'question':self.q.id,'value':'a@example.com'}])
+        self.assertEqual(response.status_code,201)
+        delivery=WebhookDelivery.objects.get(webhook=hook)
+        self.assertEqual(delivery.status,'pending')
+        with patch('app.surveys.services.webhooks.validate_url'),patch('app.surveys.services.webhooks.requests.post',return_value=Mock(status_code=204)) as outbound:
+            deliver(delivery)
+            self.assertEqual(delivery.status,'delivered')
+            self.assertEqual(delivery.attempts,1)
+            self.assertIn('X-Survey-Signature',outbound.call_args.kwargs['headers'])
+        self.auth()
+        self.assertEqual(self.client.post(self.base+f'surveys/{self.survey.id}/webhooks/',{'url':'http://127.0.0.1/private'},format='json').status_code,400)
