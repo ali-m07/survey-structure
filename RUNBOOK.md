@@ -69,7 +69,7 @@ docker compose --env-file deployment/.env.staging -f docker-compose.survey.yml -
 ./scripts/restore-survey.ps1 -EnvironmentFile deployment/.env.production -BackupFile backups/survey-YYYYMMDD-HHMMSS.dump -ConfirmOverwrite
 ```
 
-بکاپ در قالب custom PostgreSQL است؛ اسکریپت از انتقال باینری با `docker cp` استفاده می‌کند تا PowerShell داده را خراب نکند. نسخه‌های بکاپ رمزگذاری شده را بیرون از همان سرور نگه دارید. volume `survey_media` جداگانه با snapshot زیرساخت ذخیره و بازیابی شود. بازگشت تصویر فقط کد را برمی‌گرداند؛ migration معکوس خودکار انجام نمی‌دهد. اگر schema ناسازگار شد، بازیابی بکاپ پس از پذیرش از دست رفتن پاسخ‌های جدید لازم است. بازیابی را ابتدا روی staging تمرین کنید.
+بکاپ در قالب custom PostgreSQL است؛ اسکریپت از انتقال باینری با `docker cp` استفاده می‌کند تا PowerShell داده را خراب نکند. نسخه‌های بکاپ رمزگذاری شده را بیرون از همان سرور نگه دارید. اگر API در حال اجرا باشد اسکریپت volume `survey_media` را نیز در فایل tar.gz جداگانه ذخیره می‌کند. هنگام بازیابی فایل‌ها، برنامه را متوقف و archive متناظر را در volume فایل‌ها بازیابی کنید؛ دیتابیس و فایل‌ها باید از یک نوبت بکاپ باشند. بازگشت تصویر فقط کد را برمی‌گرداند؛ migration معکوس خودکار انجام نمی‌دهد. اگر schema ناسازگار شد، بازیابی بکاپ پس از پذیرش از دست رفتن پاسخ‌های جدید لازم است. بازیابی را ابتدا روی staging تمرین کنید.
 
 پایش سلامت:
 
@@ -80,4 +80,5 @@ docker compose --env-file deployment/.env.production -f docker-compose.survey.ym
 ```
 
 healthcheck API سلامت HTTP فرایند را نشان می‌دهد؛ به تنهایی صحت SMTP، دیتابیس یا کل چرخه پرسشنامه را اثبات نمی‌کند. برای مانیتورینگ عملیاتی بررسی دوره‌ای چرخه پاسخ و سلامت دیتابیس اضافه کنید. فایل‌های محیط، logs و بکاپ‌ها نباید عمومی شوند.
+
 

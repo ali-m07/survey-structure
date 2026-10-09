@@ -12,3 +12,14 @@ $id = & docker @compose ps -q postgres
 if ($LASTEXITCODE) { throw 'Backup copy failed' }
 & docker @compose exec -T postgres rm -f /tmp/survey-backup.dump
 Write-Host "Database backup: $file"
+$mediaId = & docker @compose ps -q api
+if ($mediaId) {
+    $mediaFile = Join-Path (Resolve-Path $Destination) "survey-media-$stamp.tar.gz"
+    & docker @compose exec -T api tar -czf /tmp/survey-media-backup.tar.gz -C /app/media .
+    if ($LASTEXITCODE) { throw 'Media backup failed' }
+    & docker cp "${mediaId}:/tmp/survey-media-backup.tar.gz" $mediaFile
+    if ($LASTEXITCODE) { throw 'Media copy failed' }
+    & docker @compose exec -T api rm -f /tmp/survey-media-backup.tar.gz
+    Write-Host "Media backup: $mediaFile"
+}
+
