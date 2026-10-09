@@ -1,0 +1,101 @@
+name: survey-platform
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-survey}
+      POSTGRES_USER: ${DATABASE_USER:-survey}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}
+    volumes:
+      - survey_database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  migrate:
+    image: survey-api:${RELEASE_TAG:-local}
+    build:
+      context: .
+      dockerfile: deployment/api.Dockerfile
+    environment: &api_environment
+      USE_SQLITE: 'false'
+      DEBUG: ${DEBUG:-false}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY}
+      DATABASE_NAME: ${DATABASE_NAME:-survey}
+      DATABASE_USER: ${DATABASE_USER:-survey}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: '5432'
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,api}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+    command: [python, manage.py, migrate, --noinput]
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    image: survey-api:${RELEASE_TAG:-local}
+    build:
+      context: .
+      dockerfile: deployment/api.Dockerfile
+    restart: unless-stopped
+    environment: *api_environment
+    ports:
+      - '127.0.0.1:${API_PORT:-8003}:8003'
+    volumes:
+      - survey_media:/app/media
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://localhost:8003/health", timeout=5)']
+      interval: 15s
+      timeout: 6s
+      retries: 5
+  web:
+    image: survey-web:${RELEASE_TAG:-local}
+    build:
+      context: .
+      dockerfile: deployment/web.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8003}
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${WEB_PORT:-3000}:3000'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, 'fetch("http://localhost:3000").then(r=>{if(r.status>=500)process.exit(1)}).catch(()=>process.exit(1))']
+      interval: 15s
+      timeout: 10s
+      retries: 5
+  proxy:
+    image: caddy:2-alpine
+    profiles: [tls]
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    ports: ['80:80', '443:443']
+    volumes:
+      - ./deployment/Caddyfile:/etc/caddy/Caddyfile:ro
+      - survey_tls:/data
+      - survey_proxy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+volumes:
+  survey_database:
+  survey_media:
+  survey_tls:
+  survey_proxy_config:
