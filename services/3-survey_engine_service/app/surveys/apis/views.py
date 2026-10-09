@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes, throttle_classes
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -18,6 +18,9 @@ from .access import tenant, editable, audit
 
 class LoginThrottle(AnonRateThrottle):
     scope='login'
+
+class GenerationThrottle(UserRateThrottle):
+    scope = 'generation'
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -65,6 +68,38 @@ class SurveyViewSet(ScopedViewSet):
     queryset = Survey.objects.all().prefetch_related('sections__questions')
     serializer_class = SurveySerializer
     tenant_path = 'tenant_id'
+    @action(detail=True, methods=['post'], throttle_classes=[GenerationThrottle])
+    def generate(self, request, pk=None):
+        survey = self.get_object()
+        tenant(request, True)
+        editable(survey)
+        from app.surveys.services.generation import generate_proposal
+        return Response({'proposal': generate_proposal(request.data)})
+
+    @action(detail=True, methods=['post'], url_path='apply-generated')
+    @transaction.atomic
+    def apply_generated(self, request, pk=None):
+        tenant(request, True)
+        survey = Survey.objects.select_for_update().get(pk=self.get_object().pk)
+        editable(survey)
+        from app.surveys.services.generation import validate_proposal
+        if not isinstance(request.data, dict):
+            raise ValidationError('Expected a proposal object.')
+        proposal = validate_proposal(request.data.get('proposal'))
+        existing = survey.sections.order_by('-order', '-id').first()
+        next_order = existing.order + 1 if existing else 0
+        for offset, section in enumerate(proposal['sections']):
+            created = Section.objects.create(survey=survey, title=section['title'], order=next_order + offset)
+            for order, question in enumerate(section['questions']):
+                Question.objects.create(section=created, order=order, **question)
+        fields = []
+        if not survey.title.strip():
+            survey.title = proposal['title']; fields.append('title')
+        if not survey.description.strip():
+            survey.description = proposal['description']; fields.append('description')
+        survey.save(update_fields=fields + ['updated_at'])
+        audit(request, 'apply_generated.survey', survey)
+        return Response(SurveySerializer(survey).data, status=201)
     def perform_create(self, serializer):
         obj = serializer.save(tenant_id=tenant(self.request, True), created_by_id=str(self.request.user.id))
         audit(self.request, 'create.survey', obj)

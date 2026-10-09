@@ -102,7 +102,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'URL_FORMAT_OVERRIDE': None,
-    'DEFAULT_THROTTLE_RATES': {'login':'10/min','submission':'30/min'},
+    'DEFAULT_THROTTLE_RATES': {'login':'10/min','submission':'30/min','generation':'5/min'},
 }
 
 CORS_ALLOWED_ORIGINS = config('CORS_ORIGINS', default='http://localhost:3000,http://localhost:8003').split(',')
@@ -130,3 +130,10 @@ if not DEBUG and SECRET_KEY == "django-insecure-survey-service-change-in-product
     raise RuntimeError("Set SECRET_KEY in production.")
 
 EMAIL_TIMEOUT = 10
+
+# AI credentials remain on the API server. An empty provider disables generation.
+SURVEY_AI_PROVIDER = config('AI_PROVIDER', default='')
+SURVEY_AI_URL = config('AI_BASE_URL', default='')
+SURVEY_AI_MODEL = config('AI_MODEL', default='')
+SURVEY_AI_API_KEY = config('AI_API_KEY', default='')
+SURVEY_AI_TIMEOUT = max(1, min(90, config('AI_TIMEOUT', default=90, cast=int)))
