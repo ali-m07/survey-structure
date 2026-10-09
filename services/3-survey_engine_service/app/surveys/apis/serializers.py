@@ -8,6 +8,8 @@ from app.surveys.models import (
 class QuestionSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         from .access import tenant, editable
+        if self.instance:
+            editable(self.instance.section.survey)
         section = attrs.get('section', getattr(self.instance, 'section', None))
         if section and section.survey.tenant_id != tenant(self.context['request'], True):
             raise serializers.ValidationError('Invalid section.')
@@ -28,6 +30,8 @@ class QuestionSerializer(serializers.ModelSerializer):
 class SectionSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         from .access import tenant, editable
+        if self.instance:
+            editable(self.instance.survey)
         survey = attrs.get('survey', getattr(self.instance, 'survey', None))
         if survey and survey.tenant_id != tenant(self.context['request'], True):
             raise serializers.ValidationError('Invalid survey.')
@@ -61,7 +65,7 @@ class ParticipantSerializer(serializers.ModelSerializer):
         model = Participant
         fields = ['id', 'survey', 'email', 'token', 'invited_at', 'started_at',
                  'completed_at', 'is_anonymous']
-        read_only_fields = ['id', 'token', 'invited_at']
+        read_only_fields = ['id', 'token', 'invited_at', 'started_at', 'completed_at']
 
 
 class AnswerSerializer(serializers.ModelSerializer):

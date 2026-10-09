@@ -17,8 +17,11 @@ router.register(r'realtime-responses', RealTimeResponseViewSet)
 router.register(r'dei-question-sets', DEIQuestionSetViewSet)
 
 from .views import login, me, logout
+from .public import public_survey, submit
 
 urlpatterns = [
+    path('public/surveys/<int:pk>/', public_survey),
+    path('public/surveys/<int:pk>/submit/', submit),
     path('auth/login/', login),
     path('auth/me/', me),
     path('auth/logout/', logout),

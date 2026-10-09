@@ -59,6 +59,7 @@ class SurveyViewSet(ScopedViewSet):
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
         survey = self.get_object()
+        editable(survey)
         from app.surveys.services.validation import validate_structure
         validate_structure(survey)
         survey.status = 'active'
