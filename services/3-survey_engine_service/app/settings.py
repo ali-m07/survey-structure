@@ -101,6 +101,8 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'URL_FORMAT_OVERRIDE': None,
+    'DEFAULT_THROTTLE_RATES': {'login':'10/min','submission':'30/min'},
 }
 
 CORS_ALLOWED_ORIGINS = config('CORS_ORIGINS', default='http://localhost:3000,http://localhost:8003').split(',')
@@ -120,3 +122,9 @@ SURVEY_WEB_URL = config("SURVEY_WEB_URL", default="http://localhost:3000")
 STATIC_ROOT = BASE_DIR / "staticfiles"
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="http://localhost:3000").split(",")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+if not DEBUG and SECRET_KEY == "django-insecure-survey-service-change-in-production":
+    raise RuntimeError("Set SECRET_KEY in production.")

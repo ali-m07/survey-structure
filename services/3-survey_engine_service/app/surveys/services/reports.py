@@ -4,6 +4,13 @@ from django.http import HttpResponse
 from app.surveys.services.validation import questions
 
 def filtered(survey, params):
+    from datetime import date
+    from rest_framework.exceptions import ValidationError
+    try:
+        start=date.fromisoformat(params['start']) if params.get('start') else None
+        end=date.fromisoformat(params['end']) if params.get('end') else None
+        if start and end and start>end: raise ValueError()
+    except ValueError: raise ValidationError('Use ISO dates and start before end.')
     qs = survey.submissions.all()
     if params.get('start'): qs = qs.filter(submitted_at__date__gte=params['start'])
     if params.get('end'): qs = qs.filter(submitted_at__date__lte=params['end'])
@@ -44,11 +51,17 @@ def export(survey,params):
         response=HttpResponse(output.getvalue(),content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     elif kind == 'pdf':
         from reportlab.pdfgen import canvas
-        output=io.BytesIO();pdf=canvas.Canvas(output);pdf.setFont('Helvetica',12);y=790
-        for line in [survey.title]+[f"Question {q.id}: {q.question_text}" for q in qs]+['Responses: '+str(len(rows))]+[json.dumps(row,ensure_ascii=True) for row in rows]:
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from pathlib import Path
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        pdfmetrics.registerFont(TTFont('NotoArabic',str(Path(__file__).resolve().parent.parent/'assets'/'NotoSansArabic.ttf')))
+        output=io.BytesIO();pdf=canvas.Canvas(output);pdf.setFont('NotoArabic',12);y=790
+        for line in [survey.title]+[f"Question {q.id}: {q.question_text}" for q in qs]+['Responses: '+str(len(rows))]+[json.dumps(row,ensure_ascii=False) for row in rows]:
             for start in range(0,len(line),95):
-                pdf.drawString(35,y,line[start:start+95]);y-=18
-                if y<40: pdf.showPage();pdf.setFont('Helvetica',12);y=790
+                pdf.drawString(35,y,get_display(arabic_reshaper.reshape(line[start:start+95])));y-=18
+                if y<40: pdf.showPage();pdf.setFont('NotoArabic',12);y=790
         pdf.save();response=HttpResponse(output.getvalue(),content_type='application/pdf')
     elif kind == 'csv':
         output=io.StringIO();writer=csv.writer(output);writer.writerow(headers)

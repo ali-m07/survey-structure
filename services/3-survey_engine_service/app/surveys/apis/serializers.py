@@ -89,6 +89,13 @@ class AnswerSerializer(serializers.ModelSerializer):
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        data=super().to_representation(instance)
+        if instance.participant and instance.participant.is_anonymous:
+            data['participant']=None
+            data['ip_address']=None
+        return data
+
     answers = AnswerSerializer(many=True, read_only=True)
     survey_title = serializers.CharField(source='survey.title', read_only=True)
     

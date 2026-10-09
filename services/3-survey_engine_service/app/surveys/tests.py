@@ -68,3 +68,32 @@ class SurveySecurityTests(TestCase):
     def test_malformed_settings(self):
         self.auth()
         self.assertEqual(self.client.patch(self.base+f'surveys/{self.survey.id}/',{'settings':[]},format='json').status_code,400)
+
+    def test_exports_and_invalid_filter(self):
+        self.publish()
+        self.assertEqual(self.submit([{'question':self.q.id,'value':'a@example.com'}]).status_code,201)
+        self.auth()
+        url=self.base+f'surveys/{self.survey.id}/export/'
+        for kind,signature in [('csv',bytes([239,187,191])),('xlsx',b'PK'),('pdf',b'%PDF')]:
+            response=self.client.get(url,{'format':kind})
+            self.assertEqual(response.status_code,200)
+            self.assertTrue(response.content.startswith(signature))
+        self.assertEqual(self.client.get(url,{'start':'bad'}).status_code,400)
+    def test_template_copy_logic_remap(self):
+        self.q.question_type='boolean';self.q.save()
+        dependent=Question.objects.create(section=self.section,question_text='Dependent',question_type='text',order=1,validation_rules={'display_if':{'question':self.q.id,'operator':'equals','value':True}})
+        self.auth()
+        template=self.client.post(self.base+'templates/',{'survey':self.survey.id,'name':'Saved'},format='json')
+        self.assertEqual(template.status_code,201)
+        copied=self.client.post(self.base+f"templates/{template.data['id']}/use/",{},format='json')
+        self.assertEqual(copied.status_code,201)
+        qs=copied.data['sections'][0]['questions']
+        self.assertEqual(qs[1]['validation_rules']['display_if']['question'],qs[0]['id'])
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_invitation_test_transport_is_explicit(self):
+        self.publish();self.auth()
+        response=self.client.post(self.base+'participants/',{'survey':self.survey.id,'email':'a@example.com'},format='json')
+        self.assertEqual(response.status_code,201)
+        sent=self.client.post(self.base+f"participants/{response.data['id']}/send_invitation/")
+        self.assertEqual(sent.status_code,200)
+        self.assertEqual(sent.data['status'],'test_transport')

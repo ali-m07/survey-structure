@@ -6,7 +6,8 @@ from django.db import transaction
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from rest_framework import viewsets, status
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, throttle_classes
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -15,9 +16,14 @@ from app.surveys.models import Survey, Section, Question, Participant, Submissio
 from .serializers import SurveySerializer, SectionSerializer, QuestionSerializer, ParticipantSerializer, SubmissionSerializer, AnswerSerializer, RealTimeResponseSerializer, DEIQuestionSetSerializer
 from .access import tenant, editable, audit
 
+class LoginThrottle(AnonRateThrottle):
+    scope='login'
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([LoginThrottle])
 def login(request):
+    if not isinstance(request.data,dict): raise ValidationError('Expected an object.')
     user = authenticate(username=request.data.get('username'), password=request.data.get('password'))
     if not user:
         return Response({'detail':'Invalid credentials.'}, status=401)

@@ -2,7 +2,8 @@ import uuid
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
@@ -32,10 +33,15 @@ def public_survey(request, pk):
     data['settings'] = {k:v for k,v in survey.settings.items() if k in ('language','allow_multiple','invitation_only','randomize_questions')}
     return Response(data)
 
+class SubmissionThrottle(AnonRateThrottle):
+    scope='submission'
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([SubmissionThrottle])
 @transaction.atomic
 def submit(request, pk):
+    if not isinstance(request.data,dict): raise ValidationError('Expected an object.')
     survey = get_object_or_404(Survey.objects.select_for_update(), pk=pk)
     token = request.data.get('token') or request.query_params.get('token')
     try: response_id = str(uuid.UUID(request.data.get('response_id','')))
@@ -46,7 +52,7 @@ def submit(request, pk):
         return Response({'id':previous.id,'status':'completed'})
     participant = available(survey, token)
     rows = request.data.get('answers')
-    if not isinstance(rows,list): raise ValidationError({'answers':'Expected an array.'})
+    if not isinstance(rows,list) or len(rows)>1000: raise ValidationError({'answers':'Expected an array.'})
     values = {}
     for row in rows:
         if not isinstance(row,dict) or not isinstance(row.get('question'),int) or row['question'] in values: raise ValidationError('Invalid or duplicate question.')

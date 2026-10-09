@@ -4,6 +4,11 @@ from django.http import JsonResponse
 
 def health_check(request):
     """Health check endpoint."""
+    from django.db import connection
+    try:
+        with connection.cursor() as cursor: cursor.execute('SELECT 1')
+    except Exception:
+        return JsonResponse({'status':'unhealthy','service':'survey-engine'},status=503)
     return JsonResponse({'status': 'healthy', 'service': 'survey-engine'})
 
 urlpatterns = [
