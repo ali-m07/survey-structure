@@ -1,18 +1,18 @@
-# بررسی عملی راه‌اندازی — ۲۰۲۶-۱۰-۰۹
+# Deployment Validation — 2026-10-09
 
-- اجرای نهایی محلی روی Docker Desktop 29.8.0: وب `http://localhost:3000`، API `http://localhost:8003` و PostgreSQL 16 روی volume پایدار.
-- سرویس‌های `postgres`، `api` و `web` در وضعیت healthy قرار گرفتند. worker `jobs` چرخه webhook و یادآوری را هر ۳۰ ثانیه اجرا می‌کند.
-- compose با `config --quiet` معتبر بود؛ فایل‌های PowerShell بدون خطای نحوی خوانده شدند.
-- نصب تازه PostgreSQL از migration 0001 تا 0006 موفق بود.
-- نصب وب با `npm ci` در Linux موفق شد؛ lockfile از محیط پاک Linux بازتولید شد تا وابستگی‌های اختیاری Windows باعث شکست CI نشوند.
-- build نهایی Next 15.5.27 شامل بررسی نوع‌ها و ۱۳ صفحه موفق بود. وابستگی‌های توسعه از تصویر اجرایی حذف شدند؛ audit وابستگی‌های اجرایی صفر آسیب‌پذیری گزارش کرد.
-- سلامت API، صفحه ورود و GET عمومی از مسیر هم‌دامنه `/api/v1/survey/public/surveys/1/` پاسخ 200 دادند.
-- اشکال redirect بین Next و Django رفع شد: proxy اسلش پایانی API را نگه می‌دارد تا POST به GET تبدیل نشود.
-- بکاپ دیتابیس custom و archive فایل‌ها ایجاد شدند. فایل دیتابیس در یک دیتابیس موقت جداگانه بازیابی شد؛ ۲۸ migration قابل خواندن بودند و دیتابیس بررسی پس از پایان حذف شد. دیتابیس محصول بازنویسی نشد.
-- تنظیم Caddy با `caddy validate` معتبر بود. HTTPS روی سرور عمومی اجرا نشده است؛ دامنه، سرور و ایمیل گواهی باید برای staging و تولید تعیین شوند.
-- فایل محیط واقعی، اطلاعات مدیر و بکاپ‌ها در Git ثبت نشده‌اند. SQLite توسعه باقی مانده و داده اجرای Docker در PostgreSQL مستقل ذخیره می‌شود.
+- Final local deployment ran on Docker Desktop 29.8.0: web at `http://localhost:3000`, API at `http://localhost:8003`, and PostgreSQL 16 on a persistent volume.
+- The `postgres`, `api`, and `web` services reached healthy status. The `jobs` worker runs the webhook and reminder cycle every 30 seconds.
+- Compose passed `config --quiet`; PowerShell files were parsed without syntax errors.
+- A fresh PostgreSQL installation successfully applied migrations 0001 through 0006.
+- Web dependency installation with `npm ci` succeeded on Linux; the lockfile was regenerated in a clean Linux environment to prevent optional Windows dependencies from breaking CI.
+- The final Next 15.5.27 build succeeded, including type checking and 13 pages. Development dependencies were removed from the runtime image; the runtime dependency audit reported zero vulnerabilities.
+- The API health endpoint, login page, and public GET through the same-origin path `/api/v1/survey/public/surveys/1/` returned HTTP 200.
+- The redirect issue between Next and Django was fixed: the proxy preserves the API's trailing slash so POST requests are not converted to GET requests.
+- A custom-format database backup and file archive were created. The database backup was restored into a separate temporary database; 28 migrations were readable, and the verification database was deleted afterward. The product database was not overwritten.
+- Caddy configuration passed `caddy validate`. HTTPS has not been deployed on a public server; the domain, server, and certificate email address must be selected for staging and production.
+- The actual environment file, administrator credentials, and backups are not tracked in Git. Development SQLite remains in place, while Docker deployment data is stored independently in PostgreSQL.
 
-بررسی‌های چرخه محصول و رابط در گزارش اصلی توسعه ثبت می‌شوند. راهنمای تکرار اجرا، بکاپ و بازگشت در `RUNBOOK.md` است.
+Product lifecycle and interface checks are recorded in the main development report. Instructions for repeating deployment, backup, and rollback are in `RUNBOOK.md`.
 
 ## Multi-stage images and single Compose (2026-10-09)
 

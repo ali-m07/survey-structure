@@ -1,43 +1,45 @@
 # Survey Structure
 
-پروژه پرسشنامه‌ساز با رابط Next.js و API مبتنی بر Django REST Framework. توسعه در ۸ فاز و راه‌اندازی در ۴ مرحله انجام می‌شود.
+A survey platform with a Next.js interface and a Django REST Framework API. The project is organized into eight development phases and four rollout stages.
 
-## وضعیت پروژه
+## Project status
 
-نسخه فعلی در حال تکمیل است. گزارش‌های قدیمی با عنوان‌های «۱۰۰٪ کامل» یا «production ready» نتیجه بررسی نسخه جاری نیستند. وضعیت قابل استناد در [گزارش اجرا](IMPLEMENTATION_PROGRESS.md) و معیارهای پذیرش در [پلن اجرایی](IMPLEMENTATION_PLAN.md) ثبت می‌شوند.
+The initial implementation of all eight development phases is complete and has been integrated and run locally. The changes have been pushed to `main`. External deployment is still pending. This milestone does not represent full QuestionPro feature parity or verified production capacity.
 
-## مسیر کاربر
+Older reports labeled “100% complete” or “production ready” are not validation of the current version. Refer to the [implementation report](IMPLEMENTATION_PROGRESS.md) for verified results and limitations, and the [implementation plan](IMPLEMENTATION_PLAN.md) for the original scope and acceptance criteria.
 
-۱. مدیر وارد سازمان خود می‌شود و پرسشنامه پیش‌نویس می‌سازد.
-۲. بخش‌ها، سؤال‌ها، گزینه‌ها و منطق نمایش را تنظیم و پیش‌نمایش می‌کند.
-۳. نسخه آماده را منتشر و لینک یا دعوت اختصاصی ارسال می‌کند.
-۴. پاسخ‌دهنده در صفحه عمومی پاسخ می‌دهد.
-۵. مدیر پاسخ‌ها و گزارش‌های سازمان خود را بررسی و دریافت می‌کند.
+## User journey
 
-## ساختار مخزن
+1. An administrator signs into their organization and creates a draft survey.
+2. They configure sections, questions, options, and display logic, then preview the survey.
+3. They publish the prepared survey and distribute a public link or individual invitations.
+4. Respondents submit answers through the public survey page.
+5. The administrator reviews and exports their organization's responses and reports.
 
-- `frontend/`: رابط مدیریت، سازنده و پاسخ‌دهنده.
-- `services/3-survey_engine_service/`: مدل‌ها، دسترسی، API و منطق پرسشنامه.
-- `scripts/`: راه‌اندازی محلی.
-- `deployment/` و `docker-compose.yml`: اجرای مستقل محصول.
-- `.github/workflows/survey-platform.yml`: بررسی API و ساخت رابط.
-- سایر `services/` : ساختار پلتفرم بزرگ‌تر اولیه؛ برای اجرای پایه پرسشنامه‌ساز همگی لازم نیستند.
+## Repository structure
 
-## شروع و راه‌اندازی
+- `frontend/`: administration interface, survey builder, and respondent interface.
+- `services/3-survey_engine_service/`: survey models, permissions, API, and survey logic.
+- `scripts/`: local startup and test runners.
+- `deployment/` and `docker-compose.yml`: standalone product deployment.
+- `.github/workflows/survey-platform.yml`: backend checks and frontend build checks.
+- Other `services/`: the original broader platform structure; not all services are needed to run the core survey product.
 
-دستورهای نصب، ایجاد مدیر، اجرای محلی، Docker، بکاپ و استقرار در [راهنمای اجرا](RUNBOOK.md) ثبت می‌شوند. برای استقرار بیرونی باید سرور، دامنه و تنظیمات محیط مقصد مشخص باشند.
+## Setup and deployment
 
-اطلاعات محیط و کلیدها در فایل محلی نگهداری می‌شوند و وارد مخزن نمی‌شوند. فایل‌های نمونه تنظیمات فقط برای توضیح نام متغیرها هستند.
+Installation, administrator creation, local startup, Docker, backups, and deployment instructions are documented in the [runbook](RUNBOOK.md). External deployment requires a target server, domain, and environment configuration.
 
-## قرارداد API
+Environment settings and secrets are stored in local files and excluded from the repository. Example configuration files document variable names only.
 
-مسیر پایه: `/api/v1/survey/`.
+## API contract
 
-مدیریت از توکن و عضویت سازمانی استفاده می‌کند. پاسخ‌دهی عمومی مسیر جدا دارد. در نسخه منتشرشده ساختار ثابت می‌ماند؛ تغییر ساختار با ایجاد پیش‌نویس جدید انجام می‌شود.
+Base path: `/api/v1/survey/`.
 
-## روش توسعه
+Administrative endpoints use token authentication and organization membership. Public survey submissions have a separate route. Published survey structures remain immutable; structural changes require a new draft.
 
-هر تغییر مستقل در یک کامیت ثبت می‌شود. سه حوزه بک‌اند، رابط و راه‌اندازی مالک جدا دارند و عامل اصلی یکپارچه‌سازی و گزارش پیشرفت را انجام می‌دهد. تکمیل فاز فقط پس از بررسی معیار پذیرش آن اعلام می‌شود.
+## Development workflow
+
+Each independent change is recorded in its own commit. Backend, frontend, and deployment work have separate owners; the coordinating agent handles integration and progress reporting. Phase completion is reported against its acceptance criteria, with any remaining limitations documented.
 
 ## Test runner
 
@@ -53,4 +55,4 @@ Use `--install` on first setup to install Python requirements and locked npm dep
 
 The backend checks Django configuration, missing migrations, and survey tests using SQLite and Django's isolated test database. The frontend runs a production build (including Next lint checks) and TypeScript checks. Frontend checks write build output, so stop a local frontend development server before running them. The runner returns a nonzero exit code on failure and writes logs and `summary.json` under ignored `test-results/<suite>/`.
 
-GitHub Actions runs the two suites in parallel on pushes and relevant pull requests. It also supports manual runs through **Actions → Survey platform checks → Run workflow** and uploads the reports even when checks fail.
+GitHub Actions runs the two suites in parallel on pushes and relevant pull requests. It also supports manual runs through **Actions → Survey platform checks → Run workflow** and uploads the reports even when checks fail. The latest local run passed all 16 backend tests, configuration and migration checks, the frontend build, and TypeScript checks. The online Actions result has not yet been verified.

@@ -1,139 +1,148 @@
-# برنامه توسعه و راه‌اندازی پرسشنامه‌ساز
+# Survey Builder Development and Launch Plan
 
-تاریخ: ۲۰۲۶-۱۰-۰۹
-وضعیت: برنامه اولیه بر اساس خواندن مستندات و بررسی مستقل کد توسط دو ایجنت؛ اجرای مراحل هنوز شروع نشده است.
+Date: 2026-10-09
 
-## هدف
+Status: Historical initial plan based on documentation and independent code reviews by two agents. The baseline and proposed branch policy below describe the project before implementation. The initial eight development phases have since been implemented, integrated, and merged into and pushed to `main` at the user's request. Server staging and production deployment remain pending. Completion of the initial scope does not mean every aspirational feature below or full QuestionPro feature parity has been delivered; see `IMPLEMENTATION_PROGRESS.md` for implemented capabilities and remaining limitations.
 
-تکمیل چرخه ساخت، پیش‌نمایش، انتشار، پاسخ‌دهی، توزیع و تحلیل پرسشنامه با قابلیت‌های قابل مقایسه با QuestionPro. معیار تکمیل، کارکرد واقعی مسیرهای محصول است؛ عنوان‌های «۱۰۰٪ کامل» در مستندات قدیمی معیار پذیرش نیستند.
+## Goal
 
-## وضعیت موجود
+Complete the survey creation, preview, publication, response, distribution, and analysis lifecycle with capabilities comparable to QuestionPro. Completion is measured by working product flows; claims of “100% complete” in older documents are not acceptance criteria.
 
-- ساختار Survey → Section → Question و Participant → Submission → Answer وجود دارد.
-- مدل ۱۰ نوع سؤال دارد؛ سازنده ۸ نوع را ارائه می‌کند و فعلاً افزودن و حذف انجام می‌دهد.
-- صفحه پاسخ‌دهی عمومی با لینک توزیع همخوان ساخته نشده است.
-- اعتبارسنجی پاسخ، دسترسی مدیریتی و جداسازی سازمان‌ها نیاز به تکمیل دارند.
-- دعوت، QR و بعضی گزارش‌ها پیاده‌سازی ناقص دارند.
-- آدرس API بین صفحات و hookها یکسان نیست.
-- Docker Compose فعلی زیرساخت‌ها را اجرا می‌کند؛ وب و API پرسشنامه در آن نیستند. گرافانا و وب هر دو پورت ۳۰۰۰ دارند.
+## Original Baseline Before Implementation
 
-## سیاست تغییر و کامیت
+- The Survey → Section → Question and Participant → Submission → Answer structures exist.
+- The model defines ten question types; the builder exposes eight and currently supports adding and deleting questions.
+- The public response page does not match the distribution link.
+- Response validation, administrative access, and organization isolation need completion.
+- Invitations, QR codes, and some reports are partially implemented.
+- API addresses are inconsistent across pages and hooks.
+- The existing Docker Compose starts infrastructure but excludes the survey web app and API. Grafana and the web app both use port 3000.
 
-1. توسعه روی شاخه codex/survey-platform انجام می‌شود.
-2. هر تغییر مستقل و قابل بررسی، یک کامیت مستقل دارد؛ تغییر مرتبط چند فایل می‌تواند یک کامیت باشد.
-3. برای هر تغییر، دلیل، معیار پذیرش و نتیجه بررسی در گزارش پیشرفت ثبت می‌شود.
-4. عامل اصلی مالک ادغام و کامیت‌هاست؛ ایجنت‌ها فقط فایل‌های محدوده خود را تغییر می‌دهند و تغییر دیگران را بازنویسی نمی‌کنند.
-5. بک‌اند، رابط و راه‌اندازی پس از تثبیت قرارداد API به صورت موازی کار می‌کنند. فایل‌های مشترک مالک واحد دارند.
-6. اطلاعات محرمانه و فایل‌های محیط محلی وارد کامیت نمی‌شوند.
-7. push روی همین شاخه انجام می‌شود؛ شاخه main با تغییرات بزرگ مستقیم جایگزین نمی‌شود.
+## Original Change and Commit Policy
 
-## فازهای توسعه: ۸ فاز
+This was the policy proposed at planning time. Implementation was subsequently merged into and pushed to `main` following the user's explicit instruction, superseding the original branch-only push proposal.
 
-### فاز ۱ — پایه داده، دسترسی و قرارداد API
+1. Develop on `codex/survey-platform`.
+2. Each independent, reviewable change receives its own commit; related changes across several files may share one commit.
+3. Record the reason, acceptance criteria, and verification result for each change in the progress report.
+4. The lead agent owns integration and commits. Agents modify only files within their assigned scope and do not overwrite others' changes.
+5. Backend, interface, and launch work proceed in parallel once the API contract is stable. Shared files have a single owner.
+6. Secrets and local environment files must not enter commits.
+7. Push to the development branch; do not directly replace `main` with a large change. This original proposal was superseded by the user's later instruction to merge and push to `main`.
 
-کارها: یکسان‌کردن API، احراز هویت مدیر، عضویت سازمانی و محدودکردن تمام منابع به سازمان مجاز، تفکیک مسیر عمومی پاسخ‌دهی، ذخیره پاسخ در تراکنش و اعتبارسنجی تعلق سؤال، نوع، گزینه و الزامی‌بودن. بررسی migrationهای موجود و مسیر نصب تازه.
+## Development Phases: Eight Phases
 
-پذیرش: مدیر سازمان A به داده سازمان B دسترسی ندارد؛ پاسخ نامعتبر ذخیره نمی‌شود؛ نصب تازه و migration اجرا می‌شوند.
+The following sections preserve the original tasks and acceptance criteria. Refer to the progress report for the delivered scope rather than interpreting every planned item as a completed feature.
 
-کامیت‌های پیشنهادی: unify survey API configuration؛ enforce survey tenant permissions؛ validate submissions atomically.
+### Phase 1 — Data Foundation, Access, and API Contract
 
-### فاز ۲ — سازنده کامل
+Tasks: Unify the API; authenticate administrators; implement organization membership and restrict all resources to authorized organizations; separate public response routes; save responses transactionally; validate question ownership, type, options, and required status. Review existing migrations and the fresh installation path.
 
-کارها: ویرایش پرسشنامه، بخش و سؤال؛ کپی و جابه‌جایی؛ تنظیم گزینه‌ها و صفحه‌بندی؛ نمایش وضعیت ذخیره؛ ذخیره خودکار با مدیریت خطا؛ پیش‌نمایش با موتور مشترک پاسخ‌دهی.
+Acceptance: An administrator from organization A cannot access organization B's data; invalid responses are not saved; fresh installation and migrations succeed.
 
-پذیرش: پرسشنامه چندبخشی ساخته، مرتب، ویرایش و پس از بازکردن مجدد بدون از‌دست‌رفتن تغییرات نمایش داده شود.
+Suggested commits: `unify survey API configuration`; `enforce survey tenant permissions`; `validate submissions atomically`.
 
-کامیت‌های پیشنهادی: edit survey structure؛ duplicate and reorder questions؛ add builder save state and preview.
+### Phase 2 — Complete Builder
 
-### فاز ۳ — انواع سؤال و تنظیمات
+Tasks: Edit surveys, sections, and questions; duplicate and reorder items; configure options and pagination; show save status; autosave with error handling; preview using the shared response engine.
 
-کارها: تکمیل متن، تک‌انتخابی، چندانتخابی، تاریخ، امتیاز، لیکرت، ماتریس، رتبه‌بندی؛ افزودن عدد، ایمیل، بله/خیر و NPS؛ تعیین حد انتخاب، دامنه مقیاس و گزینه سایر. فایل و صوت فقط همراه مسیر ذخیره، محدودیت حجم و دسترسی واقعی عرضه شوند.
+Acceptance: A survey with multiple sections can be created, reordered, edited, and reopened without losing changes.
 
-پذیرش: هر نوع عرضه‌شده از تنظیم در سازنده تا پاسخ و خروجی داده کار کند؛ نوع ناقص به عنوان آماده نشان داده نشود.
+Suggested commits: `edit survey structure`; `duplicate and reorder questions`; `add builder save state and preview`.
 
-کامیت‌ها: گروه‌های مستقل انواع سؤال و تنظیمات مرتبط.
+### Phase 3 — Question Types and Settings
 
-### فاز ۴ — موتور منطق پرسشنامه
+Tasks: Complete text, single choice, multiple choice, date, rating, Likert, matrix, and ranking questions; add number, email, yes/no, and NPS questions; configure selection limits, scale ranges, and an Other option. Offer file and audio questions only with real storage, size limits, and access controls.
 
-کارها: نمایش شرطی، پرش سؤال و بخش، استفاده از پاسخ قبلی، ترتیب تصادفی اختیاری، بررسی ارجاع‌های نامعتبر و حلقه‌ها. تعریف قرارداد یکسان اجرای منطق در مرورگر و اعتبارسنجی سرور.
+Acceptance: Every exposed question type works from builder configuration through response submission and data export; incomplete types are not presented as ready.
 
-پذیرش: مسیر پاسخ‌دهی مطابق شرط‌ها تغییر کند؛ سؤال پنهان الزامی مانع ارسال نشود؛ منطق خراب قابل انتشار نباشد.
+Commits: Independent groups of question types and their related settings.
 
-کامیت‌ها: logic schema and validation؛ conditional visibility؛ branching and answer piping.
+### Phase 4 — Survey Logic Engine
 
-### فاز ۵ — تجربه پاسخ‌دهنده
+Tasks: Conditional visibility; question and section branching; reuse earlier answers; optional random ordering; validation of invalid references and cycles. Define a consistent contract for browser logic execution and server validation.
 
-کارها: مسیر عمومی هماهنگ با لینک توزیع؛ نمایش مناسب موبایل؛ فارسی و راست‌به‌چپ؛ نوار پیشرفت؛ ذخیره موقت و ادامه پاسخ؛ وضعیت اتمام و خطا؛ محدودیت پاسخ مجدد بر اساس تنظیم پرسشنامه.
+Acceptance: The response path changes according to conditions; hidden required questions do not block submission; invalid logic cannot be published.
 
-پذیرش: پاسخ‌دهنده بدون حساب مدیریتی پرسشنامه منتشرشده را باز کند، ادامه دهد و پاسخ نهایی معتبر ثبت کند؛ پیش‌نویس عمومی قابل دسترسی نباشد.
+Commits: `logic schema and validation`; `conditional visibility`; `branching and answer piping`.
 
-کامیت‌ها: public survey runner؛ response resume and completion؛ Persian mobile accessibility.
+### Phase 5 — Respondent Experience
 
-### فاز ۶ — انتشار و توزیع
+Tasks: A public route consistent with the distribution link; mobile presentation; Persian and right-to-left layout; progress bar; temporary saves and response resumption; completion and error states; repeat-response restrictions based on survey settings.
 
-کارها: چرخه پیش‌نویس، انتشار و بسته‌شدن؛ نسخه ثابت پرسشنامه منتشرشده؛ لینک عمومی و دعوت توکن‌دار؛ QR واقعی؛ ایمیل و یادآوری با وضعیت ارسال و شکست؛ زمان‌بندی و شرکت‌کنندگان. SMS وابسته به ارائه‌دهنده واقعی است.
+Acceptance: A respondent can open a published survey without an administrator account, resume it, and submit a valid final response; drafts are not publicly accessible.
 
-پذیرش: تغییر پیش‌نویس پاسخ‌های قبلی را خراب نکند؛ لینک منقضی و پرسشنامه بسته پاسخ نپذیرند؛ موفقیت دعوت فقط پس از ارسال معتبر ثبت شود.
+Commits: `public survey runner`; `response resume and completion`; `Persian mobile accessibility`.
 
-کامیت‌ها: survey publication lifecycle؛ invitation links and QR؛ email delivery and reminders.
+### Phase 6 — Publication and Distribution
 
-### فاز ۷ — تحلیل و خروجی
+Tasks: Draft, published, and closed lifecycle; immutable published survey versions; public links and token-based invitations; real QR codes; email and reminders with delivery and failure states; scheduling and participants. SMS depends on a real provider.
 
-کارها: پاسخ‌ها و نرخ تکمیل؛ نمودار بر اساس نوع سؤال؛ فیلترها و مقایسه؛ NPS؛ خروجی CSV و Excel؛ PDF واقعی؛ تحلیل متن با مسیر جایگزین هنگام نبود AI؛ رعایت ناشناس‌بودن در گزارش.
+Acceptance: Draft changes do not corrupt earlier responses; expired links and closed surveys reject responses; invitation success is recorded only after valid delivery.
 
-پذیرش: تعدادها و خروجی با پاسخ‌های ثبت‌شده تطبیق داشته باشند؛ فارسی در خروجی حفظ شود؛ پاسخ سازمان دیگر وارد گزارش نشود.
+Commits: `survey publication lifecycle`; `invitation links and QR`; `email delivery and reminders`.
 
-کامیت‌ها: response analytics؛ data exports؛ printable reports؛ optional text insights.
+### Phase 7 — Analytics and Exports
 
-### فاز ۸ — امکانات تکمیلی و آماده‌سازی نهایی
+Tasks: Responses and completion rates; charts by question type; filters and comparisons; NPS; CSV and Excel exports; real PDF output; text analysis with a fallback when AI is unavailable; preserve anonymity in reports.
 
-کارها: کتابخانه قالب؛ همکاری تیمی و نقش‌ها؛ تاریخچه تغییر؛ اتصال webhook با مدیریت تلاش مجدد؛ بهبود عملکرد و مستندات واقعی؛ بررسی چرخه کامل و رفع ایرادها.
+Acceptance: Counts and exports match stored responses; Persian is preserved in output; another organization's responses never enter the report.
 
-پذیرش: قابلیت‌ها وضعیت واقعی داشته باشند؛ سناریوی ساخت تا گزارش با کاربران مختلف کامل اجرا شود؛ محدودیت‌ها مستند شوند.
+Commits: `response analytics`; `data exports`; `printable reports`; `optional text insights`.
 
-کامیت‌ها: survey templates؛ team collaboration and audit؛ webhook integrations؛ final hardening and documentation.
+### Phase 8 — Additional Features and Final Preparation
 
-## فازهای راه‌اندازی: ۴ فاز
+Tasks: Template library; team collaboration and roles; change history; webhook integration with retries; performance improvements and accurate documentation; review the complete lifecycle and fix issues.
 
-### اجرا ۱ — محیط توسعه قابل تکرار
+Acceptance: Features report their real status; the creation-to-reporting scenario works with different users; limitations are documented.
 
-پیش‌نیاز: فاز ۱ توسعه و قرارداد API مشخص.
+Commits: `survey templates`; `team collaboration and audit`; `webhook integrations`; `final hardening and documentation`.
 
-کارها: بررسی ابزارهای نصب‌شده؛ فرمان‌های مناسب Windows؛ وابستگی‌ها و فایل قفل؛ نمونه تنظیمات؛ migration؛ حساب مدیریتی محلی؛ اجرای وب و API؛ رفع تداخل پورت گرافانا.
+## Launch Phases: Four Phases
 
-خروجی: آدرس محلی و دستور راه‌اندازی از نصب تازه. معیار: سلامت API و بازشدن رابط، با داده آزمایشی غیرواقعی.
+### Launch 1 — Reproducible Development Environment
 
-### اجرا ۲ — نسخه یکپارچه محلی
+Prerequisite: Development phase 1 and a defined API contract.
 
-پیش‌نیاز: فازهای ۱ تا ۶ توسعه.
+Tasks: Inspect installed tools; provide Windows-compatible commands; dependencies and lockfiles; sample configuration; migrations; a local administrator account; start the web app and API; resolve the Grafana port conflict.
 
-کارها: Docker Compose مخصوص محصول با وب، API و PostgreSQL؛ healthcheck؛ ذخیره پایدار؛ seed اختیاری؛ بررسی ساخت، انتشار و ارسال پاسخ و خروجی اولیه.
+Deliverable: A local address and startup instructions for a fresh installation. Acceptance: A healthy API and accessible interface using synthetic sample data.
 
-خروجی: اجرای یکپارچه با یک فرمان. سرویس‌های اضافی فقط در صورت نیاز فعال شوند.
+### Launch 2 — Integrated Local Version
 
-### اجرا ۳ — محیط آزمایشی روی سرور
+Prerequisite: Development phases 1 through 6.
 
-پیش‌نیاز: نسخه یکپارچه موفق و مشخص‌بودن سرور، دامنه و دسترسی استقرار.
+Tasks: Product-specific Docker Compose with the web app, API, and PostgreSQL; health checks; persistent storage; optional seed data; verify creation, publication, response submission, and initial exports.
 
-کارها: تنظیم محیط سرور؛ HTTPS؛ secrets؛ مهاجرت داده؛ ارسال ایمیل واقعی؛ بکاپ و بازیابی؛ ثبت خطا؛ استقرار نسخه با شماره کامیت و امکان برگشت.
+Deliverable: Integrated startup with one command. Enable extra services only when needed.
 
-خروجی: لینک آزمایشی برای بررسی کاربر. اگر مقصد استقرار هنوز مشخص نیست، فایل‌ها و دستورهای استقرار آماده می‌شوند و اطلاعات مقصد هنگام نیاز دریافت می‌شود.
+### Launch 3 — Server Staging Environment
 
-### اجرا ۴ — انتشار عملیاتی
+Prerequisite: A successful integrated version and a specified server, domain, and deployment access.
 
-پیش‌نیاز: فازهای توسعه کامل، بررسی نسخه آزمایشی و تأیید آمادگی انتشار.
+Tasks: Configure the server environment; HTTPS; secrets; data migration; real email delivery; backups and restoration; error logging; deploy an identified commit with a rollback path.
 
-کارها: دامنه نهایی، نسخه پشتیبان پیش از انتشار، بررسی سلامت و ظرفیت، فعال‌کردن هشدارها، راهنمای مدیر و ثبت محدودیت‌های باقی‌مانده.
+Deliverable: A staging link for user review. If the deployment target is not yet specified, prepare deployment files and instructions and obtain target details when needed.
 
-خروجی: سرویس عملیاتی با ثبت نسخه، بکاپ و مسیر بازگشت قابل اجرا. تکمیل این مرحله فقط پس از مشاهده موفقیت استقرار و چرخه واقعی اعلام شود.
+Current status: Pending server, domain, and deployment access. Prepared deployment artifacts and local verification do not constitute a completed staging deployment.
 
-## ترتیب اجرا و تقسیم مسئولیت
+### Launch 4 — Production Release
 
-ابتدا فاز ۱ و اجرای ۱؛ سپس فازهای ۲ و ۳ با توسعه موتور مشترک پاسخ‌دهی. فاز ۴ پس از قرارداد سؤال‌ها؛ فازهای ۵ و ۶ با قرارداد انتشار مشخص؛ اجرای ۲؛ فازهای ۷ و ۸؛ اجرای ۳ و ۴.
+Prerequisite: Completed development phases, staging review, and approval of release readiness.
 
-- ایجنت بک‌اند: سرویس پرسشنامه، مدل‌ها، API، migration و منطق سرور.
-- ایجنت رابط: سازنده و پاسخ‌دهنده در frontend؛ طبق قرارداد تثبیت‌شده API.
-- ایجنت راه‌اندازی: فایل‌های اجرا، Docker و مستندات نصب؛ بدون تغییر کد تحت مالکیت دیگران.
-- عامل اصلی: قراردادها، یکپارچه‌سازی، بررسی نتایج، کامیت و push.
+Tasks: Final domain; backup before release; health and capacity checks; enable alerts; administrator guidance; document remaining limitations.
 
-این پلن زمان قطعی و درصد پیشرفت حدسی تعیین نمی‌کند. پایان هر فاز با معیار پذیرش و کامیت‌های ثبت‌شده گزارش می‌شود.
+Deliverable: An operational service with a recorded version, backups, and an executable rollback path. Declare this phase complete only after observing a successful deployment and a real end-to-end lifecycle.
+
+Current status: Pending staging and production deployment.
+
+## Original Execution Order and Responsibilities
+
+Start with development phase 1 and launch phase 1; then phases 2 and 3 with the shared response engine. Begin phase 4 after establishing question contracts; phases 5 and 6 after establishing the publication contract; then launch phase 2; development phases 7 and 8; and launch phases 3 and 4.
+
+- Backend agent: Survey service, models, API, migrations, and server logic.
+- Interface agent: Builder and respondent interface in `frontend`, following the established API contract.
+- Launch agent: Startup files, Docker, and installation documentation, without modifying code owned by others.
+- Lead agent: Contracts, integration, verification of results, commits, and pushes.
+
+This plan does not assign speculative dates or progress percentages. Phase completion is reported against acceptance criteria and recorded commits. The progress report records actual implementation results and remaining limitations.

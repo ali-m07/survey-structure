@@ -1,34 +1,34 @@
-# راهنمای اجرای پرسشنامه‌ساز
+# Survey Builder Runbook
 
-## فاز اجرا ۱: Windows و توسعه محلی
+## Deployment phase 1: Windows and local development
 
-پیش‌نیاز Python 3.12، Node 20 یا بالاتر و دسترسی نصب وابستگی‌هاست. از ریشه پروژه:
+Prerequisites are Python 3.12, Node 20 or later, and permission to install dependencies. Run from the repository root:
 
 ```powershell
 ./scripts/start-local.ps1 -Install
 ```
 
-در اجراهای بعدی بدون `-Install` اجرا کنید. SQLite محلی داده‌ها را در سرویس ذخیره می‌کند. وب http://localhost:3000 و سلامت API http://localhost:8003/health است. خروجی‌ها در پوشه `logs` ذخیره می‌شوند. اگر پورت از قبل اشغال باشد اسکریپت آن سرویس را دوباره اجرا نمی‌کند؛ سلامت و هویت سرویس روی پورت را بررسی کنید.
+For subsequent runs, omit `-Install`. Local SQLite stores data in the service directory. The web application is available at http://localhost:3000 and the API health endpoint at http://localhost:8003/health. Output is saved in `logs`. If a port is already occupied, the script does not start that service again; check the health and identity of the service using that port.
 
-ایجاد مدیر (رمز واقعی را وارد کنید، مقدار نمونه را استفاده نکنید):
+Create an administrator using a real password rather than an example value:
 
 ```powershell
-$env:SURVEY_ADMIN_PASSWORD = Read-Host 'رمز مدیر'
+$env:SURVEY_ADMIN_PASSWORD = Read-Host 'Administrator password'
 ./services/3-survey_engine_service/.venv/Scripts/python.exe services/3-survey_engine_service/manage.py bootstrap_survey_admin --username admin --password $env:SURVEY_ADMIN_PASSWORD --tenant default
 Remove-Item Env:SURVEY_ADMIN_PASSWORD
 ```
 
-ورود از صفحه login انجام می‌شود. شناسه سازمان با tenant ساخته شده باید یکسان باشد. مدیر نمونه خودکار با رمز ثابت ساخته نمی‌شود.
+Sign in through the login page. The organization ID must match the tenant that was created. No example administrator with a fixed password is created automatically.
 
-## فاز اجرا ۲: Docker یکپارچه
+## Deployment phase 2: Unified Docker setup
 
-Docker Desktop با Linux containers باید روشن باشد. فایل docker-compose.yml مرجع واحد اجرای برنامه است. دیتابیس به میزبان منتشر نمی‌شود و داده روی volume باقی می‌ماند. این فایل واحد، PostgreSQL، migration، API، وب، worker و پروکسی اختیاری HTTPS را مدیریت می‌کند.
+Docker Desktop must be running with Linux containers. `docker-compose.yml` is the single source of configuration for running the application. The database is not exposed to the host, and its data persists in a volume. This single file manages PostgreSQL, migrations, the API, web application, worker, and optional HTTPS proxy.
 
 ```powershell
 Copy-Item deployment/.env.local.example deployment/.env.local
 ```
 
-دو مقدار `DATABASE_PASSWORD` و `SECRET_KEY` را با رشته‌های تصادفی طولانی پر کنید. فایل محیط واقعی در Git ثبت نمی‌شود. سپس:
+Set `DATABASE_PASSWORD` and `SECRET_KEY` to long random strings. The actual environment file is not tracked in Git. Then run:
 
 ```powershell
 docker compose --env-file deployment/.env.local -f docker-compose.yml config --quiet
@@ -37,31 +37,31 @@ docker compose --env-file deployment/.env.local -f docker-compose.yml ps
 docker compose --env-file deployment/.env.local -f docker-compose.yml logs --tail 100 api web migrate
 ```
 
-ابتدا postgres سالم می‌شود، سپس migration اجرا می‌شود و بعد API، وب و worker پس‌زمینه شروع می‌شوند. سرویس `jobs` هر ۳۰ ثانیه صف webhook و یادآوری‌های فعال را بررسی می‌کند؛ شکست ارسال در logs و مدل تلاش‌ها قابل مشاهده است. یادآوری فقط با `reminders_enabled` و بعد از دعوت موفق فعال می‌شود. ایجاد مدیر داخل کانتینر:
+PostgreSQL becomes healthy first, migrations run next, and then the API, web application, and background worker start. The `jobs` service checks the webhook queue and enabled reminders every 30 seconds; delivery failures are visible in logs and attempt records. Reminders require `reminders_enabled` and a successfully delivered invitation. Create an administrator inside the container:
 
 ```powershell
 docker compose --env-file deployment/.env.local -f docker-compose.yml exec -e ADMIN_PASSWORD api python manage.py bootstrap_survey_admin --username admin --tenant default
 ```
 
-برای ساخت مدیر نخست `ADMIN_PASSWORD` یا `--password` لازم است؛ رمز حداقل ۱۰ کاراکتر انتخاب کنید. دستور زیر متغیر را به کانتینر منتقل می‌کند و آن را در Git ثبت نمی‌کند.
+Creating the first administrator requires `ADMIN_PASSWORD` or `--password`; choose a password of at least 10 characters. The command above passes the variable into the container without recording it in Git.
 
-توقف با `down` داده را نگه می‌دارد. `down -v` دیتابیس را حذف می‌کند و برای محیط دارای داده استفاده نشود.
+Stopping with `down` preserves data. `down -v` deletes the database and must not be used in an environment containing data that must be retained.
 
-## فاز اجرا ۳: staging و HTTPS
+## Deployment phase 3: Staging and HTTPS
 
-فایل `.env.staging.example` را به `.env.staging` کپی کنید. دامنه واقعی، ایمیل گواهی، hosts، origins، secrets و SMTP معتبر را وارد کنید. DNS به سرور اشاره کند و پورت‌های 80 و 443 باز باشند. از compose قبلی که همین پورت‌ها را اشغال می‌کند هم‌زمان استفاده نکنید. وب و API فقط روی loopback میزبان منتشر می‌شوند؛ Caddy مسیر `/api/*` و `/health` را به API و بقیه را به وب می‌فرستد.
+Copy `.env.staging.example` to `.env.staging`. Provide the actual domain, certificate email address, hosts, origins, secrets, and valid SMTP settings. DNS must point to the server, and ports 80 and 443 must be open. Do not run another Compose setup that occupies these ports at the same time. The web application and API are exposed only on the host's loopback interface; Caddy routes `/api/*` and `/health` to the API and all other paths to the web application.
 
-`NEXT_PUBLIC_API_URL` خالی یعنی درخواست مرورگر به دامنه جاری؛ این مقدار زمان build ثابت می‌شود. بعد از تغییر آن وب را دوباره build کنید.
+An empty `NEXT_PUBLIC_API_URL` makes the browser send requests to the current domain; this value is fixed at build time. Rebuild the web application after changing it.
 
 ```powershell
 docker compose --env-file deployment/.env.staging -f docker-compose.yml --profile tls up -d --build
 ```
 
-بررسی پذیرش: ورود مدیر، ساخت پرسشنامه، پیش‌نمایش، انتشار، ثبت پاسخ عمومی، گزارش، بسته‌شدن و جلوگیری از پاسخ جدید. دعوت ایمیل فقط پس از تنظیم SMTP واقعی بررسی شود. دامنه و سرور مقصد هنوز انتخاب نشده‌اند؛ این راهنما به معنی استقرار واقعی روی اینترنت نیست.
+Acceptance checks: administrator login, survey creation, preview, publication, public response submission, reporting, survey closure, and rejection of new responses after closure. Check email invitations only after configuring a real SMTP server. The destination domain and server have not yet been selected; this runbook does not establish that the application has been deployed publicly.
 
-## فاز اجرا ۴: تولید، بکاپ و بازگشت
+## Deployment phase 4: Production, backup, and rollback
 
-برای تولید فایل `.env.production.example` را کپی و مقادیر واقعی را تکمیل کنید. `DEBUG=false` و دامنه مجاز دقیق باقی بمانند. برای هر انتشار `RELEASE_TAG` یکتا انتخاب کنید تا تصاویر قبلی قابل بازگشت باشند؛ قبل از انتشار از دیتابیس و volume فایل‌ها بکاپ بگیرید. تصاویر قدیمی را تا پایان دوره بازگشت حذف نکنید.
+For production, copy `.env.production.example` and fill in actual values. Keep `DEBUG=false` and an exact allowed domain. Choose a unique `RELEASE_TAG` for each release so that previous images remain available for rollback; back up the database and file volume before releasing. Retain old images until the rollback period ends.
 
 ```powershell
 ./scripts/backup-survey.ps1 -EnvironmentFile deployment/.env.production
@@ -69,9 +69,9 @@ docker compose --env-file deployment/.env.staging -f docker-compose.yml --profil
 ./scripts/restore-survey.ps1 -EnvironmentFile deployment/.env.production -BackupFile backups/survey-YYYYMMDD-HHMMSS.dump -ConfirmOverwrite
 ```
 
-بکاپ در قالب custom PostgreSQL است؛ اسکریپت از انتقال باینری با `docker cp` استفاده می‌کند تا PowerShell داده را خراب نکند. نسخه‌های بکاپ رمزگذاری شده را بیرون از همان سرور نگه دارید. اگر API در حال اجرا باشد اسکریپت volume `survey_media` را نیز در فایل tar.gz جداگانه ذخیره می‌کند. هنگام بازیابی فایل‌ها، برنامه را متوقف و archive متناظر را در volume فایل‌ها بازیابی کنید؛ دیتابیس و فایل‌ها باید از یک نوبت بکاپ باشند. بازگشت تصویر فقط کد را برمی‌گرداند؛ migration معکوس خودکار انجام نمی‌دهد. اگر schema ناسازگار شد، بازیابی بکاپ پس از پذیرش از دست رفتن پاسخ‌های جدید لازم است. بازیابی را ابتدا روی staging تمرین کنید.
+Database backups use PostgreSQL's custom format; the script uses `docker cp` for binary transfer to prevent PowerShell from corrupting the data. Keep encrypted backup copies outside the application server. If the API is running, the script also saves the `survey_media` volume in a separate tar.gz archive. When restoring files, stop the application and restore the corresponding archive into the file volume; database and file backups must come from the same backup run. Image rollback restores only code; it does not automatically reverse migrations. If the schema becomes incompatible, restoring a backup requires accepting the loss of newer responses. Practice restoration in staging first.
 
-پایش سلامت:
+Health monitoring:
 
 ```powershell
 Invoke-RestMethod http://localhost:8003/health
@@ -79,19 +79,16 @@ docker compose --env-file deployment/.env.production -f docker-compose.yml ps
 docker compose --env-file deployment/.env.production -f docker-compose.yml logs --tail 100 api web
 ```
 
-healthcheck API سلامت HTTP فرایند را نشان می‌دهد؛ به تنهایی صحت SMTP، دیتابیس یا کل چرخه پرسشنامه را اثبات نمی‌کند. برای مانیتورینگ عملیاتی بررسی دوره‌ای چرخه پاسخ و سلامت دیتابیس اضافه کنید. فایل‌های محیط، logs و بکاپ‌ها نباید عمومی شوند.
+The API health check indicates the process's HTTP health; by itself, it does not establish that SMTP, the database, or the complete survey lifecycle works correctly. Add periodic response-lifecycle and database-health checks for operational monitoring. Environment files, logs, and backups must not be made public.
 
+## Multi-stage image builds
 
+The API has two stages: dependency installation in an isolated Python environment, followed by copying that environment into a non-root runtime image. The web application has three stages: dependency installation, the Next.js build, and standalone output execution as the `node` user. The web runtime image receives only the files required for the server, pages, static assets, and public assets.
 
-
-## ساخت چندمرحله‌ای تصاویر
-
-API دو مرحله دارد: نصب وابستگی‌ها در محیط Python جدا، سپس انتقال همان محیط به تصویر اجرای غیر root. وب سه مرحله دارد: نصب وابستگی‌ها، ساخت Next.js و اجرای خروجی standalone با کاربر node. تصویر اجرای وب فقط فایل‌های لازم برای server، صفحات، فایل‌های static و public را دریافت می‌کند.
-
-اجرای همه سرویس‌های محصول از ریشه پروژه:
+Run all product services from the repository root:
 
 ```powershell
 docker compose --env-file deployment/.env.local up -d --build
 ```
 
-نام پروژه survey-platform و volumeهای قبلی حفظ می‌شوند. migration قبل از API اجرا می‌شود و worker و وب پس از سلامت API شروع می‌شوند. برای HTTPS از همان فایل با --profile tls استفاده کنید.
+The `survey-platform` project name and existing volumes are preserved. Migrations run before the API; the worker and web application start after the API becomes healthy. For HTTPS, use the same file with `--profile tls`.
