@@ -39,11 +39,13 @@ export function isVisible(q: Question, answers: Answers) {
 export function activeQuestions(survey: Survey, answers: Answers) {
   const all = survey.sections.flatMap((s) => s.questions);
   const result: Question[] = [];
+  const reachableAnswers: Answers = {};
   for (let i = 0; i < all.length; i++) {
     const q = all[i];
-    if (!isVisible(q, answers)) continue;
+    if (!isVisible(q, reachableAnswers)) continue;
     result.push(q);
     const answer = answers[q.id];
+    reachableAnswers[q.id] = answer;
     const destination =
       typeof answer === "object"
         ? undefined
@@ -160,6 +162,9 @@ export function SurveyRunner({
   const visible = useMemo(
     () => activeQuestions(survey, answers),
     [survey, answers],
+  );
+  const visibleAnswers: Answers = Object.fromEntries(
+    visible.map((q) => [q.id, answers[q.id]]),
   );
   const sections = survey.sections
     .map((s) => ({
@@ -283,11 +288,11 @@ export function SurveyRunner({
                 <div key={q.id} className="space-y-2">
                   <label className="font-semibold block" id={`label-${q.id}`}>
                     {q.question_text.replace(/\{\{(\d+)\}\}/g, (_, id) =>
-                      Array.isArray(answers[id])
-                        ? answers[id].join("، ")
-                        : typeof answers[id] === "object"
+                      Array.isArray(visibleAnswers[id])
+                        ? visibleAnswers[id].join("، ")
+                        : typeof visibleAnswers[id] === "object"
                           ? ""
-                          : String(answers[id] ?? ""),
+                          : String(visibleAnswers[id] ?? ""),
                     )}
                     {q.is_required && <span className="text-red-700"> *</span>}
                   </label>
