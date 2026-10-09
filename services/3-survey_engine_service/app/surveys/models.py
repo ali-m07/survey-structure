@@ -175,3 +175,25 @@ class AuditEvent(models.Model):
     object_id = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
     detail = models.JSONField(default=dict)
+
+
+class SurveyTemplate(models.Model):
+    tenant_id = models.CharField(max_length=255, db_index=True)
+    name = models.CharField(max_length=255)
+    structure = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Webhook(models.Model):
+    survey = models.ForeignKey(Survey,on_delete=models.CASCADE,related_name='webhooks')
+    url = models.URLField()
+    secret = models.CharField(max_length=255)
+    enabled = models.BooleanField(default=True)
+
+class WebhookDelivery(models.Model):
+    webhook = models.ForeignKey(Webhook,on_delete=models.CASCADE,related_name='deliveries')
+    submission = models.ForeignKey(Submission,on_delete=models.CASCADE)
+    status = models.CharField(max_length=20,default='pending')
+    attempts = models.IntegerField(default=0)
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    delivered_at = models.DateTimeField(null=True,blank=True)

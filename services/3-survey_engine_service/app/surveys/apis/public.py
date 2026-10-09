@@ -64,4 +64,6 @@ def submit(request, pk):
     if participant:
         participant.completed_at = timezone.now()
         participant.save(update_fields=['completed_at'])
+    from app.surveys.services.webhooks import enqueue
+    enqueue(submission)
     return Response({'id':submission.id,'status':'completed'},status=201)

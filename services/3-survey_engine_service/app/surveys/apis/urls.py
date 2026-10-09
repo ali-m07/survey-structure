@@ -17,9 +17,16 @@ router.register(r'realtime-responses', RealTimeResponseViewSet)
 router.register(r'dei-question-sets', DEIQuestionSetViewSet)
 
 from .views import login, me, logout
+from .extras import templates, use_template, members, member_detail, webhooks, webhook_detail
 from .public import public_survey, submit
 
 urlpatterns = [
+    path('templates/', templates),
+    path('templates/<int:pk>/use/', use_template),
+    path('members/', members),
+    path('members/<int:pk>/', member_detail),
+    path('surveys/<int:pk>/webhooks/', webhooks),
+    path('webhooks/<int:pk>/', webhook_detail),
     path('public/surveys/<int:pk>/', public_survey),
     path('public/surveys/<int:pk>/submit/', submit),
     path('auth/login/', login),
