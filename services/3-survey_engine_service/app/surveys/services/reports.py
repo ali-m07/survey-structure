@@ -64,7 +64,9 @@ def export(survey,params):
         output=io.BytesIO();pdf=canvas.Canvas(output,pagesize=(595,842));y=780;page=1
         def arabic(text): return bool(re.search(r'[\u0600-\u06ff\ufb50-\ufeff]',text))
         def font(char): return 'NotoArabic' if arabic(char) else 'Helvetica'
-        def visual(text): return get_display(arabic_reshaper.reshape(str(text)))
+        def visual(text):
+            text=re.sub(r'\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?',lambda match: chr(8234)+match.group(0)+chr(8236),str(text))
+            return get_display(arabic_reshaper.reshape(text))
         def width(text,size): return sum(pdfmetrics.stringWidth(c,font(c),size) for c in visual(text))
         def footer():
             pdf.setFont('Helvetica',9);pdf.setFillColorRGB(.4,.4,.4);pdf.drawRightString(550,25,f'{page}');pdf.setFillColorRGB(0,0,0)
@@ -93,7 +95,7 @@ def export(survey,params):
         paragraph('گزارش پاسخ‌های پرسشنامه',13)
         paragraph('تعداد پاسخ‌ها: '+str(len(rows)))
         from django.utils import timezone
-        paragraph('تاریخ گزارش: '+timezone.now().strftime('%d / %m / %Y')+' (UTC)')
+        paragraph('تاریخ گزارش: '+timezone.now().strftime('%Y-%m-%d')+' (UTC)')
         y-=10
         report=analytics(survey,params)
         for item in report['questions']:
@@ -107,7 +109,7 @@ def export(survey,params):
             y-=8
         paragraph('جزئیات پاسخ‌ها',14)
         for submission in filtered(survey,params).prefetch_related('answers'):
-            paragraph('پاسخ شماره '+str(submission.id)+' | '+submission.submitted_at.strftime('%d / %m / %Y')+' | '+submission.submitted_at.strftime('%H:%M')+' UTC',12)
+            paragraph('پاسخ شماره '+str(submission.id)+' | '+submission.submitted_at.strftime('%Y-%m-%d %H:%M')+' UTC',12)
             values={a.question_id:a.answer_value for a in submission.answers.all()}
             for q in qs:
                 if q.id in values: paragraph(q.question_text+': '+answer(values[q.id]))
