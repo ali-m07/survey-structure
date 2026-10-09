@@ -15,7 +15,7 @@ export const ChartComponent: React.FC<ChartComponentProps> = ({
   xKey,
 }) => {
   const Chart = type === 'line' ? LineChart : BarChart;
-  const DataElement = type === 'line' ? Line : Bar;
+
 
   return (
     <ResponsiveContainer width="100%" height={400}>
@@ -25,9 +25,10 @@ export const ChartComponent: React.FC<ChartComponentProps> = ({
         <YAxis />
         <Tooltip />
         <Legend />
-        <DataElement type="monotone" dataKey={dataKey} stroke="#3b82f6" fill="#3b82f6" />
+        {type === "line" ? <Line type="monotone" dataKey={dataKey} stroke="#3b82f6" /> : <Bar dataKey={dataKey} fill="#3b82f6" />}
       </Chart>
     </ResponsiveContainer>
   );
 };
+
 
