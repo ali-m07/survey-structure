@@ -1,41 +1,21 @@
-"""Distribution service for survey invitations."""
-import secrets
-import string
-from typing import Optional
 from django.conf import settings
-from app.surveys.models import Participant
-import logging
-
-logger = logging.getLogger(__name__)
-
+from django.core.mail import send_mail
+from django.utils import timezone
+from urllib.parse import urlencode
 
 class DistributionService:
-    """Service for distributing surveys."""
-    
-    def generate_survey_link(self, participant: Participant) -> str:
-        """Generate unique survey link for participant."""
-        base_url = getattr(settings, 'SURVEY_BASE_URL', 'http://localhost:3000')
-        return f"{base_url}/survey/{participant.survey.id}?token={participant.token}"
-    
-    def generate_qr_code(self, participant: Participant) -> str:
-        """Generate QR code data for survey link."""
-        survey_link = self.generate_survey_link(participant)
-        # In production, use a QR code library like qrcode
-        return survey_link
-    
-    def send_sms_invitation(self, participant: Participant, phone_number: str) -> bool:
-        """Send SMS invitation."""
+    def generate_survey_link(self, participant):
+        return f"{settings.SURVEY_WEB_URL.rstrip('/')}/survey/{participant.survey_id}?{urlencode({'token':participant.token})}"
+    def invite(self, participant):
+        link = self.generate_survey_link(participant)
         try:
-            # Integration with Twilio or similar service
-            survey_link = self.generate_survey_link(participant)
-            # SMS sending logic here
-            logger.info(f"SMS sent to {phone_number} for survey {participant.survey.id}")
-            return True
-        except Exception as e:
-            logger.error(f"Error sending SMS: {e}")
-            return False
-    
-    def generate_unique_token(self) -> str:
-        """Generate unique token for participant."""
-        return secrets.token_urlsafe(32)
-
+            sent = send_mail(participant.survey.title, f"{participant.survey.description}\n\n{link}", settings.DEFAULT_FROM_EMAIL, [participant.email], fail_silently=False)
+            if sent != 1: raise RuntimeError('Email backend did not accept the message.')
+            participant.delivery_status = 'sent' if 'smtp' in settings.EMAIL_BACKEND else 'test_transport'
+            participant.delivery_error = ''
+            participant.sent_at = timezone.now()
+        except Exception as exc:
+            participant.delivery_status = 'failed'
+            participant.delivery_error = str(exc)[:2000]
+        participant.save(update_fields=['delivery_status','delivery_error','sent_at'])
+        return link

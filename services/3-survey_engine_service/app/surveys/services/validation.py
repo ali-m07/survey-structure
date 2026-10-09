@@ -33,10 +33,15 @@ def validate_structure(survey):
         for key in ('rows','columns'):
             if key in rules and (not isinstance(rules[key],list) or any(not isinstance(v,str) for v in rules[key])):
                 raise ValidationError('Matrix rows and columns must be arrays of text.')
-        if q.question_type in ('single_choice','multiple_choice','ranking') and (not q.options or len(q.options) != len(set(q.options))):
+        if q.question_type in ('single_choice','multiple_choice','ranking','scale') and (not q.options or len(q.options) != len(set(q.options))):
             raise ValidationError('Choice options must be nonempty and unique.')
         if q.question_type == 'matrix' and (not rules.get('rows') or not (rules.get('columns') or q.options)):
             raise ValidationError('Matrix requires rows and columns.')
+        for low, high in [('min','max'),('min_length','max_length'),('min_choices','max_choices')]:
+            if low in rules and high in rules and rules[low] > rules[high]: raise ValidationError('Minimum must not exceed maximum.')
+        for key in ('min_length','max_length','min_choices','max_choices'):
+            if key in rules and (int(rules[key]) != rules[key] or rules[key] < 0): raise ValidationError('Count limits must be nonnegative integers.')
+        if q.question_type == 'rating' and (rules.get('max',5) > 100 or rules.get('min',1) < 0): raise ValidationError('Rating bounds must be between 0 and 100.')
         condition = rules.get('display_if')
         if condition:
             source = condition.get('question')
@@ -55,7 +60,9 @@ def matches(condition, values):
     if operator == 'answered': return actual is not None and actual != '' and actual != []
     if operator == 'equals': return actual == expected
     if operator == 'not_equals': return actual != expected
-    if operator == 'contains': return isinstance(actual, (list,str)) and expected in actual
+    if operator == 'contains':
+        try: return isinstance(actual, (list,str)) and expected in actual
+        except TypeError: return False
     try:
         return float(actual) > float(expected) if operator == 'greater_than' else float(actual) < float(expected)
     except (TypeError, ValueError): return False
@@ -91,13 +98,13 @@ def validate_value(q, value):
         if kind == 'date':
             try: date.fromisoformat(value)
             except ValueError: raise ValidationError('Invalid ISO date.')
-    elif kind in ('number','rating','scale','nps'):
+    elif kind in ('number','rating','nps'):
         if isinstance(value,bool) or not isinstance(value,(int,float)): raise ValidationError('Expected a number.')
         low, high = (0,10) if kind == 'nps' else (rules.get('min',1 if kind in ('rating','scale') else -1e100),rules.get('max',5 if kind in ('rating','scale') else 1e100))
         if not low <= value <= high or kind == 'nps' and int(value) != value: raise ValidationError('Number is outside the allowed range.')
     elif kind == 'boolean':
         if not isinstance(value,bool): raise ValidationError('Expected true or false.')
-    elif kind == 'single_choice':
+    elif kind in ('single_choice','scale'):
         if value not in q.options: raise ValidationError('Unknown option.')
     elif kind in ('multiple_choice','ranking'):
         if not isinstance(value,list) or any(not isinstance(v,str) for v in value) or len(value)!=len(set(value)) or any(v not in q.options for v in value): raise ValidationError('Invalid selected options.')

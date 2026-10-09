@@ -1,4 +1,8 @@
 import secrets
+import io
+from django.http import HttpResponse
+from django.conf import settings
+from django.db import transaction
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from rest_framework import viewsets, status
@@ -73,6 +77,32 @@ class SurveyViewSet(ScopedViewSet):
         survey.save(update_fields=['status','updated_at'])
         audit(request, 'close.survey', survey)
         return Response(SurveySerializer(survey).data)
+    @action(detail=True, methods=['post'])
+    @transaction.atomic
+    def duplicate(self, request, pk=None):
+        source = self.get_object()
+        copy = Survey.objects.create(tenant_id=source.tenant_id, created_by_id=str(request.user.id), title=request.data.get('title',source.title+' (copy)'), description=source.description, settings=source.settings)
+        remap = {}
+        for section in source.sections.all():
+            new_section = Section.objects.create(survey=copy,title=section.title,description=section.description,order=section.order)
+            for q in section.questions.all():
+                new = Question.objects.create(section=new_section,question_text=q.question_text,question_type=q.question_type,is_required=q.is_required,order=q.order,options=q.options,validation_rules=q.validation_rules)
+                remap[q.id] = new.id
+        for q in Question.objects.filter(section__survey=copy):
+            rules = q.validation_rules
+            if rules.get('display_if'): rules['display_if']['question'] = remap.get(rules['display_if']['question'])
+            if rules.get('jump_to'): rules['jump_to'] = {k:remap.get(v) for k,v in rules['jump_to'].items()}
+            q.validation_rules = rules
+            q.save()
+        audit(request,'duplicate.survey',copy)
+        return Response(SurveySerializer(copy).data,status=201)
+    @action(detail=True, methods=['get'])
+    def qr(self, request, pk=None):
+        import qrcode
+        survey = self.get_object()
+        buffer = io.BytesIO()
+        qrcode.make(f"{settings.SURVEY_WEB_URL.rstrip('/')}/survey/{survey.id}").save(buffer,format='PNG')
+        return HttpResponse(buffer.getvalue(),content_type='image/png')
     @action(detail=True, methods=['get'])
     def statistics(self, request, pk=None):
         survey = self.get_object()
@@ -101,6 +131,14 @@ class ParticipantViewSet(ScopedViewSet):
         if serializer.validated_data.get('survey', self.get_object().survey).tenant_id != tenant(self.request, True):
             raise ValidationError('Invalid survey.')
         serializer.save()
+
+    @action(detail=True, methods=['post'])
+    def send_invitation(self, request, pk=None):
+        from app.surveys.services.distribution_service import DistributionService
+        participant = self.get_object()
+        if participant.survey.status != 'active': raise ValidationError('Publish the survey before inviting respondents.')
+        link = DistributionService().invite(participant)
+        return Response({'survey_link':link,'status':participant.delivery_status,'error':participant.delivery_error},status=200 if participant.delivery_status in ('sent','test_transport') else 502)
 
 class SubmissionViewSet(ScopedViewSet):
     queryset = Submission.objects.all()

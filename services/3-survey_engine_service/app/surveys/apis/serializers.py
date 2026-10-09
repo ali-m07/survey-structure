@@ -64,8 +64,8 @@ class ParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Participant
         fields = ['id', 'survey', 'email', 'token', 'invited_at', 'started_at',
-                 'completed_at', 'is_anonymous']
-        read_only_fields = ['id', 'token', 'invited_at', 'started_at', 'completed_at']
+                 'completed_at', 'is_anonymous', 'delivery_status', 'delivery_error', 'sent_at']
+        read_only_fields = ['id', 'token', 'invited_at', 'started_at', 'completed_at', 'delivery_status', 'delivery_error', 'sent_at']
 
 
 class AnswerSerializer(serializers.ModelSerializer):
