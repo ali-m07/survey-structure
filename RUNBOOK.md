@@ -40,10 +40,10 @@ docker compose --env-file deployment/.env.local -f docker-compose.survey.yml log
 ابتدا postgres سالم می‌شود، سپس migration اجرا می‌شود و بعد API و وب شروع می‌شوند. ایجاد مدیر داخل کانتینر:
 
 ```powershell
-docker compose --env-file deployment/.env.local -f docker-compose.survey.yml exec api python manage.py bootstrap_survey_admin --username admin --tenant default
+docker compose --env-file deployment/.env.local -f docker-compose.survey.yml exec -e ADMIN_PASSWORD api python manage.py bootstrap_survey_admin --username admin --tenant default
 ```
 
-فرمان ایجاد مدیر در صورت نبود رمز باید آن را تعاملی درخواست کند؛ اگر نسخه فرمان `--password` را الزامی می‌خواهد، آن را در محیط امن با رمز انتخابی اجرا کنید.
+برای ساخت مدیر نخست `ADMIN_PASSWORD` یا `--password` لازم است؛ رمز حداقل ۱۰ کاراکتر انتخاب کنید. دستور زیر متغیر را به کانتینر منتقل می‌کند و آن را در Git ثبت نمی‌کند.
 
 توقف با `down` داده را نگه می‌دارد. `down -v` دیتابیس را حذف می‌کند و برای محیط دارای داده استفاده نشود.
 
@@ -80,3 +80,4 @@ docker compose --env-file deployment/.env.production -f docker-compose.survey.ym
 ```
 
 healthcheck API سلامت HTTP فرایند را نشان می‌دهد؛ به تنهایی صحت SMTP، دیتابیس یا کل چرخه پرسشنامه را اثبات نمی‌کند. برای مانیتورینگ عملیاتی بررسی دوره‌ای چرخه پاسخ و سلامت دیتابیس اضافه کنید. فایل‌های محیط، logs و بکاپ‌ها نباید عمومی شوند.
+
