@@ -1,0 +1,423 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-09T10:15:32.724907+00:00",
+  "title": "Design System: Porsnama",
+  "extensions": {
+    "colorMeta": {
+      "plum": {
+        "role": "primary",
+        "displayName": "Plum",
+        "tonalRamp": [
+          "oklch(15% 0.043 283.8)",
+          "oklch(27% 0.043 283.8)",
+          "oklch(39% 0.043 283.8)",
+          "oklch(51% 0.043 283.8)",
+          "oklch(63% 0.043 283.8)",
+          "oklch(75% 0.043 283.8)",
+          "oklch(87% 0.043 283.8)",
+          "oklch(95% 0.043 283.8)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15% 0.031 284.3)",
+          "oklch(27% 0.031 284.3)",
+          "oklch(39% 0.031 284.3)",
+          "oklch(51% 0.031 284.3)",
+          "oklch(63% 0.031 284.3)",
+          "oklch(75% 0.031 284.3)",
+          "oklch(87% 0.031 284.3)",
+          "oklch(95% 0.031 284.3)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15% 0.013 294.5)",
+          "oklch(27% 0.013 294.5)",
+          "oklch(39% 0.013 294.5)",
+          "oklch(51% 0.013 294.5)",
+          "oklch(63% 0.013 294.5)",
+          "oklch(75% 0.013 294.5)",
+          "oklch(87% 0.013 294.5)",
+          "oklch(95% 0.013 294.5)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "oklch(15% 0.053 37.5)",
+          "oklch(27% 0.053 37.5)",
+          "oklch(39% 0.053 37.5)",
+          "oklch(51% 0.053 37.5)",
+          "oklch(63% 0.053 37.5)",
+          "oklch(75% 0.053 37.5)",
+          "oklch(87% 0.053 37.5)",
+          "oklch(95% 0.053 37.5)"
+        ]
+      },
+      "lavender-stage": {
+        "role": "neutral",
+        "displayName": "Lavender Stage",
+        "tonalRamp": [
+          "oklch(15% 0.042 278.8)",
+          "oklch(27% 0.042 278.8)",
+          "oklch(39% 0.042 278.8)",
+          "oklch(51% 0.042 278.8)",
+          "oklch(63% 0.042 278.8)",
+          "oklch(75% 0.042 278.8)",
+          "oklch(87% 0.042 278.8)",
+          "oklch(95% 0.042 278.8)"
+        ]
+      },
+      "lavender-sheet": {
+        "role": "neutral",
+        "displayName": "Lavender Sheet",
+        "tonalRamp": [
+          "oklch(15% 0.038 279.6)",
+          "oklch(27% 0.038 279.6)",
+          "oklch(39% 0.038 279.6)",
+          "oklch(51% 0.038 279.6)",
+          "oklch(63% 0.038 279.6)",
+          "oklch(75% 0.038 279.6)",
+          "oklch(87% 0.038 279.6)",
+          "oklch(95% 0.038 279.6)"
+        ]
+      },
+      "action": {
+        "role": "primary",
+        "displayName": "Action",
+        "tonalRamp": [
+          "oklch(15% 0.042 282.4)",
+          "oklch(27% 0.042 282.4)",
+          "oklch(39% 0.042 282.4)",
+          "oklch(51% 0.042 282.4)",
+          "oklch(63% 0.042 282.4)",
+          "oklch(75% 0.042 282.4)",
+          "oklch(87% 0.042 282.4)",
+          "oklch(95% 0.042 282.4)"
+        ]
+      },
+      "action-hover": {
+        "role": "primary",
+        "displayName": "Action Hover",
+        "tonalRamp": [
+          "oklch(15% 0.037 282.1)",
+          "oklch(27% 0.037 282.1)",
+          "oklch(39% 0.037 282.1)",
+          "oklch(51% 0.037 282.1)",
+          "oklch(63% 0.037 282.1)",
+          "oklch(75% 0.037 282.1)",
+          "oklch(87% 0.037 282.1)",
+          "oklch(95% 0.037 282.1)"
+        ]
+      },
+      "heading-accent": {
+        "role": "primary",
+        "displayName": "Heading Accent",
+        "tonalRamp": [
+          "oklch(15% 0.036 280.6)",
+          "oklch(27% 0.036 280.6)",
+          "oklch(39% 0.036 280.6)",
+          "oklch(51% 0.036 280.6)",
+          "oklch(63% 0.036 280.6)",
+          "oklch(75% 0.036 280.6)",
+          "oklch(87% 0.036 280.6)",
+          "oklch(95% 0.036 280.6)"
+        ]
+      },
+      "divider": {
+        "role": "neutral",
+        "displayName": "Divider",
+        "tonalRamp": [
+          "oklch(15% 0.019 295.0)",
+          "oklch(27% 0.019 295.0)",
+          "oklch(39% 0.019 295.0)",
+          "oklch(51% 0.019 295.0)",
+          "oklch(63% 0.019 295.0)",
+          "oklch(75% 0.019 295.0)",
+          "oklch(87% 0.019 295.0)",
+          "oklch(95% 0.019 295.0)"
+        ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "White",
+        "tonalRamp": [
+          "oklch(15% 0.000 0.0)",
+          "oklch(27% 0.000 0.0)",
+          "oklch(39% 0.000 0.0)",
+          "oklch(51% 0.000 0.0)",
+          "oklch(63% 0.000 0.0)",
+          "oklch(75% 0.000 0.0)",
+          "oklch(87% 0.000 0.0)",
+          "oklch(95% 0.000 0.0)"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Field",
+        "tonalRamp": [
+          "oklch(15% 0.100 36.0)",
+          "oklch(27% 0.100 36.0)",
+          "oklch(39% 0.100 36.0)",
+          "oklch(51% 0.100 36.0)",
+          "oklch(63% 0.100 36.0)",
+          "oklch(75% 0.100 36.0)",
+          "oklch(87% 0.100 36.0)",
+          "oklch(95% 0.100 36.0)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus",
+        "tonalRamp": [
+          "oklch(15% 0.039 281.5)",
+          "oklch(27% 0.039 281.5)",
+          "oklch(39% 0.039 281.5)",
+          "oklch(51% 0.039 281.5)",
+          "oklch(63% 0.039 281.5)",
+          "oklch(75% 0.039 281.5)",
+          "oklch(87% 0.039 281.5)",
+          "oklch(95% 0.039 281.5)"
+        ]
+      },
+      "workspace-paper": {
+        "role": "neutral",
+        "displayName": "Workspace Paper",
+        "tonalRamp": [
+          "oklch(15% 0.057 40.0)",
+          "oklch(27% 0.057 40.0)",
+          "oklch(39% 0.057 40.0)",
+          "oklch(51% 0.057 40.0)",
+          "oklch(63% 0.057 40.0)",
+          "oklch(75% 0.057 40.0)",
+          "oklch(87% 0.057 40.0)",
+          "oklch(95% 0.057 40.0)"
+        ]
+      },
+      "workspace-ink": {
+        "role": "neutral",
+        "displayName": "Workspace Ink",
+        "tonalRamp": [
+          "oklch(15% 0.030 322.2)",
+          "oklch(27% 0.030 322.2)",
+          "oklch(39% 0.030 322.2)",
+          "oklch(51% 0.030 322.2)",
+          "oklch(63% 0.030 322.2)",
+          "oklch(75% 0.030 322.2)",
+          "oklch(87% 0.030 322.2)",
+          "oklch(95% 0.030 322.2)"
+        ]
+      },
+      "workspace-muted": {
+        "role": "neutral",
+        "displayName": "Workspace Muted",
+        "tonalRamp": [
+          "oklch(15% 0.009 318.8)",
+          "oklch(27% 0.009 318.8)",
+          "oklch(39% 0.009 318.8)",
+          "oklch(51% 0.009 318.8)",
+          "oklch(63% 0.009 318.8)",
+          "oklch(75% 0.009 318.8)",
+          "oklch(87% 0.009 318.8)",
+          "oklch(95% 0.009 318.8)"
+        ]
+      },
+      "workspace-divider": {
+        "role": "neutral",
+        "displayName": "Workspace Divider",
+        "tonalRamp": [
+          "oklch(15% 0.017 338.2)",
+          "oklch(27% 0.017 338.2)",
+          "oklch(39% 0.017 338.2)",
+          "oklch(51% 0.017 338.2)",
+          "oklch(63% 0.017 338.2)",
+          "oklch(75% 0.017 338.2)",
+          "oklch(87% 0.017 338.2)",
+          "oklch(95% 0.017 338.2)"
+        ]
+      },
+      "workspace-border": {
+        "role": "neutral",
+        "displayName": "Workspace Border",
+        "tonalRamp": [
+          "oklch(15% 0.018 342.0)",
+          "oklch(27% 0.018 342.0)",
+          "oklch(39% 0.018 342.0)",
+          "oklch(51% 0.018 342.0)",
+          "oklch(63% 0.018 342.0)",
+          "oklch(75% 0.018 342.0)",
+          "oklch(87% 0.018 342.0)",
+          "oklch(95% 0.018 342.0)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Public hero headings."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Public section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Supporting public copy."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Form and control labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "dimensional-sheet",
+        "value": "16px 24px 40px -18px #54365d66",
+        "purpose": "Cast shadow for layered survey sheets."
+      }
+    ],
+    "motion": [
+      {
+        "name": "scene-easing",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Stage response and front-sheet arrival."
+      },
+      {
+        "name": "stage-response",
+        "value": "0.4s",
+        "purpose": "Bounded mouse tilt; disabled with reduced motion."
+      },
+      {
+        "name": "sheet-arrival",
+        "value": "0.9s",
+        "purpose": "Front-sheet arrival; disabled with reduced motion."
+      },
+      {
+        "name": "button-response",
+        "value": "0.2s",
+        "purpose": "Background change and lift; disabled with reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "public-mobile",
+        "value": "760px"
+      },
+      {
+        "name": "workspace-md",
+        "value": "768px"
+      },
+      {
+        "name": "public-tablet",
+        "value": "1100px"
+      },
+      {
+        "name": "public-wide",
+        "value": "1500px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Filled account action.",
+      "html": "<button class=\"ds-button\" dir=\"rtl\">ورود به حساب<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M19 12H5m6-6-6 6 6 6\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button>",
+      "css": ".ds-button{font-family:Vazirmatn,Tahoma,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:26px;background:#43264f;color:white;border:0;border-radius:10px;padding:15px 24px;min-height:52px;font-size:15px;cursor:pointer;transition:background .2s,transform .2s}.ds-button:hover{background:#684079;transform:translateY(-2px)}.ds-button:focus-visible{outline:3px solid #9159aa;outline-offset:5px;}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}.ds-button:hover{transform:none}}"
+    },
+    {
+      "name": "Small Button",
+      "kind": "button",
+      "refersTo": "button-small",
+      "description": "Filled account action.",
+      "html": "<button class=\"ds-button\" dir=\"rtl\">ورود به حساب<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M19 12H5m6-6-6 6 6 6\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button>",
+      "css": ".ds-button{font-family:Vazirmatn,Tahoma,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:26px;background:#43264f;color:white;border:0;border-radius:10px;padding:10px 19px;min-height:44px;font-size:13px;cursor:pointer;transition:background .2s,transform .2s}.ds-button:hover{background:#684079;transform:translateY(-2px)}.ds-button:focus-visible{outline:3px solid #9159aa;outline-offset:5px;}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}.ds-button:hover{transform:none}}"
+    },
+    {
+      "name": "Text Link",
+      "kind": "button",
+      "refersTo": "",
+      "description": "Quiet secondary navigation action.",
+      "html": "<a href=\"#\" class=\"ds-link\" dir=\"rtl\">معرفی محصول<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M19 12H5m6-6-6 6 6 6\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></a>",
+      "css": ".ds-link{font-family:Vazirmatn,Tahoma,sans-serif;display:inline-flex;align-items:center;gap:14px;color:#663877;min-height:44px;font-size:14px;text-decoration:none}.ds-link:hover{text-decoration:underline;text-underline-offset:5px}.ds-link:focus-visible{outline:3px solid #9159aa;outline-offset:5px;}"
+    },
+    {
+      "name": "Login Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Readable credential entry.",
+      "html": "<label class=\"ds-label\" dir=\"rtl\">نام کاربری<input class=\"ds-input\" placeholder=\"نام کاربری\" /></label>",
+      "css": ".ds-label{font-family:Vazirmatn,Tahoma,sans-serif;display:block;font-size:13px;color:#322138}.ds-input{font-family:Vazirmatn,Tahoma,sans-serif;display:block;margin-top:8px;background:#fffdfa;color:#111827;border:1px solid #d3c5d6;border-radius:8px;padding:13px 15px;font-size:15px;min-height:52px;caret-color:#663877}.ds-input::placeholder{color:#786c7a;opacity:1}.ds-input:focus-visible{outline:3px solid #9159aa;outline-offset:5px;}"
+    },
+    {
+      "name": "Public Navigation",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Public navigation with current-page emphasis.",
+      "html": "<nav class=\"ds-nav\" dir=\"rtl\"><a href=\"#\" aria-current=\"page\">معرفی محصول</a><a href=\"#\">دربارهٔ ما</a></nav>",
+      "css": ".ds-nav{font-family:Vazirmatn,Tahoma,sans-serif;display:flex;gap:34px;font-size:14px}.ds-nav a{color:#322138;text-decoration:none}.ds-nav a:hover,.ds-nav a[aria-current=\"page\"]{color:#825299}.ds-nav a:focus-visible{outline:3px solid #9159aa;outline-offset:5px;}"
+    },
+    {
+      "name": "Question Type Tag",
+      "kind": "chip",
+      "refersTo": "",
+      "description": "Descriptive question-type tag; no interactive state.",
+      "html": "<span class=\"ds-tag\" dir=\"rtl\">چندگزینه‌ای</span>",
+      "css": ".ds-tag{font-family:Vazirmatn,Tahoma,sans-serif;display:inline-block;background:#ece2f0;color:#322138;padding:9px 18px;border-radius:8px;font-size:13px}"
+    },
+    {
+      "name": "Workspace Destination",
+      "kind": "card",
+      "refersTo": "workspace-card",
+      "description": "Flat destination card for available workspace tools.",
+      "html": "<a class=\"ds-card\" href=\"#\" dir=\"rtl\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M19 12H5m6-6-6 6 6 6\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg><h2>پرسشنامه‌ها</h2><p>پرسشنامه‌های تیم و پاسخ‌ها را مشاهده کنید.</p></a>",
+      "css": ".ds-card{font-family:Vazirmatn,Tahoma,sans-serif;display:block;background:white;border:1px solid #e2d8db;border-radius:24px;padding:28px;color:#432839;text-decoration:none;transition:background-color .15s}.ds-card>svg{display:block;margin-right:auto;color:#795384}.ds-card h2{font-size:24px;font-weight:700;margin:24px 0 12px}.ds-card p{color:#756570;line-height:28px;margin:0}.ds-card:hover{background:#f3e8ee}.ds-card:focus-visible{outline:2px solid #8b5672;outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Dimensional Research Desk",
+    "overview": "Cream paper, plum typography and layered lavender questionnaire sheets give Persian survey work a tangible desk-like presence. The public surfaces combine generous editorial headings with working survey previews. Depth belongs to product geometry; copy, navigation and forms stay readable and direct.\n\nThe authenticated workspace inherits warm paper and Vazirmatn but uses a slightly warmer plum palette, white outlined cards and flatter operational density. This is an observed variation, not a second invented identity. Evidence: `frontend/src/styles/globals.css`, `components/PublicSite.tsx`, `components/SurveyScene.tsx` and `pages/workspace.tsx`; direction context: `.impeccable/direction.md`. This record covers public pages, login and the workspace entry, not all legacy application screens.",
+    "keyCharacteristics": [
+      "Persian typography and right-to-left reading order.",
+      "Cream and plum with lavender product depth.",
+      "Spacious paired sections and mobile stacking.",
+      "Interactive, explicitly labeled demonstration sheets.",
+      "Flat operational cards with visible keyboard focus."
+    ],
+    "rules": [
+      {
+        "name": "The Plum Hierarchy Rule",
+        "body": "Use dark plum for text and actions, medium plum for emphasis, and pale lavender for supporting surfaces.",
+        "section": "colors"
+      },
+      {
+        "name": "The Single Persian Voice Rule",
+        "body": "Keep Vazirmatn throughout public, login and workspace surfaces; express hierarchy with scale, weight and leading.",
+        "section": "typography"
+      },
+      {
+        "name": "The Product Depth Rule",
+        "body": "Apply dimensional layering to survey and brand demonstrations; keep operational text and controls on legible planes.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do maintain Persian reading order and the Single Persian Voice Rule.",
+      "Do preserve the Plum Hierarchy Rule across editorial and operational surfaces.",
+      "Do keep demonstration controls usable with keyboard and reduced motion.",
+      "Do use borders and tonal fills to organize flat workspace controls."
+    ],
+    "donts": [
+      "Don't scale the dimensional preview so that questions or controls become unreadable.",
+      "Don't substitute generic elevated cards for every open editorial section.",
+      "Don't remove the visible demonstration label when reusing the sample scene."
+    ]
+  }
+}

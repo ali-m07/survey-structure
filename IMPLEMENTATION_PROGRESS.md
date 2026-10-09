@@ -73,3 +73,12 @@ Test runner: `python scripts/run-tests.py`
 ## Docker Update
 
 The API now uses a two-stage build and the web app a three-stage build. `docker-compose.yml` is the single canonical Compose file; the second Compose file has been removed. The images were built and started successfully. Sixteen API tests inside the new image and seven browser checks against the standalone output passed. The web image size decreased by approximately 68%. Existing databases and examples remain accessible on the same volumes.
+
+## Public website and IAM update (2026-10-09)
+
+- Added the Porsnama / پرس‌نما public landing, product introduction, about page, and a generic login with CSS 3D interactive previews.
+- Added a shared authentication provider and a server-membership-derived workspace. Organization selection, role display, navigation and editing controls now use the same session state.
+- Protected routes wait for authentication. Team access requires administrator membership; editing requires administrator or editor membership. Public response routes remain accessible without an administrative account.
+- Built and started the updated web image successfully. Desktop (1440px) and mobile (390px) captures of all four public routes showed no horizontal overflow or page runtime errors. The illustrative preview interaction and actual administrator login to the workspace succeeded.
+- Isolated browser fixtures for viewer role rendering confirmed hidden team navigation, blocked direct editing/team routes, and a mobile workspace without overflow. These fixture checks validate browser behavior; they do not replace server permission tests. An unauthenticated workspace visit redirected to login.
+- Brand naming and product introduction were delegated by the user. No fabricated customers, team biographies, pricing or company history were added. External brand availability has not been verified.

@@ -1,4 +1,4 @@
-# Survey Structure
+# Porsnama — Survey Structure
 
 A survey platform with a Next.js interface and a Django REST Framework API. The project is organized into eight development phases and four rollout stages.
 
@@ -56,3 +56,11 @@ Use `--install` on first setup to install Python requirements and locked npm dep
 The backend checks Django configuration, missing migrations, and survey tests using SQLite and Django's isolated test database. The frontend runs a production build (including Next lint checks) and TypeScript checks. Frontend checks write build output, so stop a local frontend development server before running them. The runner returns a nonzero exit code on failure and writes logs and `summary.json` under ignored `test-results/<suite>/`.
 
 GitHub Actions runs the two suites in parallel on pushes and relevant pull requests. It also supports manual runs through **Actions → Survey platform checks → Run workflow** and uploads the reports even when checks fail. The latest local run passed all 16 backend tests, configuration and migration checks, the frontend build, and TypeScript checks. The online Actions result has not yet been verified.
+
+## Porsnama public website and account access
+
+The project now uses the brand **Porsnama / پرس‌نما**. Public routes are `/` (landing page), `/product` (product introduction), `/about` (about the product), and `/login` (one account login). The landing and login pages include interactive CSS 3D questionnaire previews with reduced-motion support. Preview answers are illustrative and never submitted.
+
+Successful login opens `/workspace`. Organization memberships returned by the server determine the active organization and role: administrators manage team access; administrators and editors can create and edit surveys; viewers have read access. The browser guards protected routes and hides actions that the current role cannot perform; existing API permissions remain authoritative. Organization switching is limited to the account's returned memberships. Accounts without memberships receive an access explanation. Public survey participation remains available without administrative login.
+
+Vazirmatn fonts are served locally; their SIL Open Font License is included under `frontend/public/fonts/OFL.txt`. No public registration or external identity provider is configured.
