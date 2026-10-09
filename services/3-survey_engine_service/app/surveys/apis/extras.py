@@ -1,3 +1,4 @@
+from app.surveys.services.rich_content import sanitize_question_html, remap_question_piping
 import secrets
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -31,12 +32,13 @@ def use_template(request,pk):
     for section in data['sections']:
         new_section=Section.objects.create(survey=survey,title=section['title'],description=section.get('description',''),order=section['order'])
         for q in section['questions']:
-            new=Question.objects.create(section=new_section,**{k:q[k] for k in ('question_text','question_type','is_required','order','options','validation_rules')});remap[q['id']]=new.id
+            new=Question.objects.create(section=new_section,question_html=sanitize_question_html(q.get('question_html', '')),**{k:q[k] for k in ('question_text','question_type','is_required','order','options','validation_rules')});remap[q['id']]=new.id
     for q in Question.objects.filter(section__survey=survey):
         rules=q.validation_rules
         if rules.get('display_if'): rules['display_if']['question']=remap.get(rules['display_if']['question'])
         if rules.get('jump_to'): rules['jump_to']={k:remap.get(v) for k,v in rules['jump_to'].items()}
-        for old,new in remap.items(): q.question_text=q.question_text.replace('{{'+str(old)+'}}','{{'+str(new)+'}}')
+        q.question_text=remap_question_piping(q.question_text, remap)
+        q.question_html=remap_question_piping(q.question_html, remap)
         q.validation_rules=rules;q.save()
     return Response(SurveySerializer(survey).data,status=201)
 

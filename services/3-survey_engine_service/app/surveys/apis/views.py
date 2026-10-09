@@ -1,3 +1,4 @@
+from app.surveys.services.rich_content import remap_question_piping
 import secrets
 import io
 from django.http import HttpResponse
@@ -100,6 +101,62 @@ class SurveyViewSet(ScopedViewSet):
         survey.save(update_fields=fields + ['updated_at'])
         audit(request, 'apply_generated.survey', survey)
         return Response(SurveySerializer(survey).data, status=201)
+    @action(detail=True, methods=['post'], url_path='bulk-questions')
+    @transaction.atomic
+    def bulk_questions(self, request, pk=None):
+        tenant(request, True)
+        survey = Survey.objects.select_for_update().get(pk=self.get_object().pk)
+        editable(survey)
+        if not isinstance(request.data, dict):
+            raise ValidationError('Expected an object.')
+        items = request.data.get('questions')
+        if not isinstance(items, list) or not 1 <= len(items) <= 100:
+            raise ValidationError({'questions': 'Provide between 1 and 100 questions.'})
+        section_id = request.data.get('section')
+        if section_id is not None:
+            if isinstance(section_id, bool) or not isinstance(section_id, int):
+                raise ValidationError({'section': 'Section must be an integer ID.'})
+            section = survey.sections.filter(pk=section_id).first()
+            if section is None:
+                raise ValidationError({'section': 'Invalid section.'})
+        else:
+            section = survey.sections.order_by('order', 'id').last()
+            if section is None:
+                section = Section.objects.create(survey=survey, title='Questions', order=0)
+        last = section.questions.order_by('-order', '-id').first()
+        next_order = last.order + 1 if last else 0
+        allowed = {'question_text', 'question_html', 'question_type', 'is_required', 'options', 'validation_rules'}
+        prepared = []
+        for index, item in enumerate(items):
+            if not isinstance(item, dict) or set(item) - allowed:
+                raise ValidationError({'questions': {index: 'Expected a question object with supported fields.'}})
+            if not isinstance(item.get('question_text'), str) or not item['question_text'].strip():
+                raise ValidationError({'questions': {index: 'A plain question label is required.'}})
+            if 'is_required' in item and not isinstance(item['is_required'], bool):
+                raise ValidationError({'questions': {index: 'Required must be true or false.'}})
+            if 'question_html' in item and not isinstance(item['question_html'], str):
+                raise ValidationError({'questions': {index: 'HTML content must be text.'}})
+            serializer = QuestionSerializer(data={**item, 'section': section.pk, 'question_type': item.get('question_type', 'text'), 'order': next_order + index}, context={'request': request})
+            if not serializer.is_valid():
+                raise ValidationError({'questions': {index: serializer.errors}})
+            prepared.append(serializer)
+        for serializer in prepared:
+            serializer.save()
+        from app.surveys.services.validation import validate_structure
+        validate_structure(survey)
+        survey.save(update_fields=['updated_at'])
+        audit(request, 'bulk_questions.survey', survey)
+        return Response(SurveySerializer(survey).data, status=201)
+
+    @transaction.atomic
+    def perform_destroy(self, instance):
+        # Serialize deletion with bulk append on the same survey. Refetch after
+        # acquiring the lock so the deletion collector sees newly added rows.
+        survey = Survey.objects.select_for_update().get(pk=instance.pk)
+        editable(survey)
+        audit(self.request, 'delete.survey', survey)
+        survey.delete()
+
     def perform_create(self, serializer):
         obj = serializer.save(tenant_id=tenant(self.request, True), created_by_id=str(self.request.user.id))
         audit(self.request, 'create.survey', obj)
@@ -133,14 +190,15 @@ class SurveyViewSet(ScopedViewSet):
         for section in source.sections.all():
             new_section = Section.objects.create(survey=copy,title=section.title,description=section.description,order=section.order)
             for q in section.questions.all():
-                new = Question.objects.create(section=new_section,question_text=q.question_text,question_type=q.question_type,is_required=q.is_required,order=q.order,options=q.options,validation_rules=q.validation_rules)
+                new = Question.objects.create(section=new_section,question_text=q.question_text,question_html=q.question_html,question_type=q.question_type,is_required=q.is_required,order=q.order,options=q.options,validation_rules=q.validation_rules)
                 remap[q.id] = new.id
         for q in Question.objects.filter(section__survey=copy):
             rules = q.validation_rules
             if rules.get('display_if'): rules['display_if']['question'] = remap.get(rules['display_if']['question'])
             if rules.get('jump_to'): rules['jump_to'] = {k:remap.get(v) for k,v in rules['jump_to'].items()}
             q.validation_rules = rules
-            for old,new in remap.items(): q.question_text = q.question_text.replace('{{'+str(old)+'}}','{{'+str(new)+'}}')
+            q.question_text = remap_question_piping(q.question_text, remap)
+            q.question_html = remap_question_piping(q.question_html, remap)
             q.save()
         audit(request,'duplicate.survey',copy)
         return Response(SurveySerializer(copy).data,status=201)
@@ -183,13 +241,14 @@ class SectionViewSet(ScopedViewSet):
         copied = Section.objects.create(survey=source.survey,title=source.title+' (copy)',description=source.description,order=source.order+1)
         remap = {}
         for q in source.questions.all():
-            new = Question.objects.create(section=copied,question_text=q.question_text,question_type=q.question_type,is_required=q.is_required,order=q.order,options=q.options,validation_rules=q.validation_rules)
+            new = Question.objects.create(section=copied,question_text=q.question_text,question_html=q.question_html,question_type=q.question_type,is_required=q.is_required,order=q.order,options=q.options,validation_rules=q.validation_rules)
             remap[q.id] = new.id
         for q in copied.questions.all():
             rules = q.validation_rules
             if rules.get('display_if'): rules['display_if']['question'] = remap.get(rules['display_if']['question'],rules['display_if']['question'])
             if rules.get('jump_to'): rules['jump_to'] = {k:remap.get(v,v) for k,v in rules['jump_to'].items()}
-            for old,new in remap.items(): q.question_text = q.question_text.replace('{{'+str(old)+'}}','{{'+str(new)+'}}')
+            q.question_text = remap_question_piping(q.question_text, remap)
+            q.question_html = remap_question_piping(q.question_html, remap)
             q.validation_rules=rules;q.save()
         return Response(SectionSerializer(copied).data,status=201)
 

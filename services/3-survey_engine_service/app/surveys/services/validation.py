@@ -1,5 +1,6 @@
 from datetime import date
 import re
+import math
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
@@ -27,14 +28,14 @@ def validate_structure(survey):
         if any(not isinstance(v,str) for v in q.options):
             raise ValidationError('Options must be strings.')
         for key in ('min','max','min_length','max_length','min_choices','max_choices'):
-            if key in rules and (isinstance(rules[key],bool) or not isinstance(rules[key],(int,float))):
+            if key in rules and (isinstance(rules[key],bool) or not isinstance(rules[key],(int,float)) or not math.isfinite(rules[key])):
                 raise ValidationError('Numeric bounds must be numbers.')
         if not isinstance(rules.get('jump_to',{}),dict) or not isinstance(rules.get('display_if',{}),dict):
             raise ValidationError('Conditions and branches must be objects.')
         for key in ('rows','columns'):
             if key in rules and (not isinstance(rules[key],list) or any(not isinstance(v,str) for v in rules[key])):
                 raise ValidationError('Matrix rows and columns must be arrays of text.')
-        if q.question_type in ('single_choice','multiple_choice','ranking','scale') and (not q.options or len(q.options) != len(set(q.options))):
+        if q.question_type in ('single_choice','multiple_choice','ranking','scale') and (not q.options or any(not v.strip() for v in q.options) or len(q.options) != len(set(q.options))):
             raise ValidationError('Choice options must be nonempty and unique.')
         if q.question_type == 'matrix' and (not rules.get('rows') or not (rules.get('columns') or q.options)):
             raise ValidationError('Matrix requires rows and columns.')
@@ -43,7 +44,7 @@ def validate_structure(survey):
         for key in ('min_length','max_length','min_choices','max_choices'):
             if key in rules and (int(rules[key]) != rules[key] or rules[key] < 0): raise ValidationError('Count limits must be nonnegative integers.')
         if q.question_type == 'rating' and (rules.get('max',5) > 100 or rules.get('min',1) < 0): raise ValidationError('Rating bounds must be between 0 and 100.')
-        for reference in re.findall(r'\{\{(\d+)\}\}',q.question_text):
+        for reference in re.findall(r'\{\{(\d+)\}\}',q.question_text + getattr(q, 'question_html', '')):
             source=int(reference)
             if source not in positions or positions[source]>=positions[q.id]: raise ValidationError('Answer piping must refer to earlier questions.')
         condition = rules.get('display_if')

@@ -66,6 +66,7 @@ class Question(models.Model):
     
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='questions')
     question_text = models.TextField()
+    question_html = models.TextField(blank=True, default="")
     question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES)
     is_required = models.BooleanField(default=False)
     order = models.IntegerField(default=0)

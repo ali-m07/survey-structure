@@ -6,6 +6,17 @@ from app.surveys.models import (
 
 
 class QuestionSerializer(serializers.ModelSerializer):
+    question_html = serializers.CharField(required=False, allow_blank=True, trim_whitespace=False, max_length=50000)
+
+    def to_internal_value(self, data):
+        if isinstance(data, dict) and 'question_html' in data and not isinstance(data['question_html'], str):
+            raise serializers.ValidationError({'question_html': 'HTML content must be text.'})
+        return super().to_internal_value(data)
+
+    def validate_question_html(self, value):
+        from app.surveys.services.rich_content import sanitize_question_html
+        return sanitize_question_html(value)
+
     def validate(self, attrs):
         from .access import tenant, editable
         if self.instance:
@@ -25,7 +36,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ['id', 'section', 'question_text', 'question_type', 'is_required', 
+        fields = ['id', 'section', 'question_text', 'question_html', 'question_type', 'is_required',
                  'order', 'options', 'validation_rules', 'created_at']
         read_only_fields = ['id', 'created_at']
 
@@ -43,7 +54,7 @@ class SectionSerializer(serializers.ModelSerializer):
         return attrs
 
     questions = QuestionSerializer(many=True, read_only=True)
-    
+
     class Meta:
         model = Section
         fields = ['id', 'survey', 'title', 'description', 'order', 'questions', 'created_at']
@@ -64,10 +75,10 @@ class SurveySerializer(serializers.ModelSerializer):
     sections = SectionSerializer(many=True, read_only=True)
     participant_count = serializers.IntegerField(source='participants.count', read_only=True)
     submission_count = serializers.IntegerField(source='submissions.count', read_only=True)
-    
+
     class Meta:
         model = Survey
-        fields = ['id', 'tenant_id', 'title', 'description', 'status', 'created_by_id', 
+        fields = ['id', 'tenant_id', 'title', 'description', 'status', 'created_by_id',
                  'created_at', 'updated_at', 'starts_at', 'ends_at', 'settings',
                  'blockchain_hash', 'sections', 'participant_count', 'submission_count']
         read_only_fields = ['id', 'tenant_id', 'created_by_id', 'status', 'created_at', 'updated_at', 'blockchain_hash']
@@ -83,7 +94,7 @@ class ParticipantSerializer(serializers.ModelSerializer):
 
 class AnswerSerializer(serializers.ModelSerializer):
     question_text = serializers.CharField(source='question.question_text', read_only=True)
-    
+
     class Meta:
         model = Answer
         fields = ['id', 'submission', 'question', 'question_text', 'answer_text',
@@ -101,7 +112,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
 
     answers = AnswerSerializer(many=True, read_only=True)
     survey_title = serializers.CharField(source='survey.title', read_only=True)
-    
+
     class Meta:
         model = Submission
         fields = ['id', 'survey', 'survey_title', 'participant', 'submitted_at',
