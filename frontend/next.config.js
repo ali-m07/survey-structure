@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  // Allow bounded AI generation requests to finish before the proxy times out.
+  experimental: { proxyTimeout: 100000 },
   i18n: { locales: ['fa', 'en', 'fr'], defaultLocale: 'fa' },
   // Preserve DRF URL slashes so POST requests do not become redirecting GETs.
   skipTrailingSlashRedirect: true,

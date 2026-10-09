@@ -1,0 +1,251 @@
+.composer {
+  background: #faf5eb;
+  border: 1px solid #e5dacf;
+  border-radius: 22px;
+  padding: 26px;
+  color: #382638;
+  margin-bottom: 24px;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.heading h2 {
+  font-size: 1.35rem;
+  margin: 0;
+}
+.mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: #e9dfea;
+  color: #674168;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.mark svg {
+  width: 30px;
+  height: 30px;
+}
+.eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  margin: 0 0 5px;
+  color: #805e79;
+}
+.intro {
+  color: #796c73;
+  line-height: 1.8;
+  margin: 16px 0 20px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.field textarea,
+.field input,
+.field select {
+  font: inherit;
+  font-weight: 400;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d9cbd2;
+  background: #fffcf7;
+  color: #382638;
+  border-radius: 12px;
+  padding: 12px;
+  outline: none;
+}
+.field textarea {
+  resize: vertical;
+}
+.field textarea:focus,
+.field input:focus,
+.field select:focus {
+  border-color: #7b517d;
+  box-shadow: 0 0 0 3px #7b517d20;
+}
+.fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px;
+  gap: 16px;
+  margin: 16px 0 20px;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.actions span {
+  font-size: 0.8rem;
+  color: #82737b;
+  line-height: 1.7;
+}
+.primary,
+.secondary {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.primary {
+  background: #633e65;
+  color: #fff;
+  border: 1px solid #633e65;
+}
+.secondary {
+  background: transparent;
+  border: 1px solid #d2c3cd;
+  color: #633e65;
+}
+.primary:hover {
+  background: #513153;
+}
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.notice {
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: #755e74;
+}
+.error {
+  background: #fae8e4;
+  padding: 12px;
+  border-radius: 10px;
+  color: #9b3e36;
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+.review {
+  border-top: 1px solid #dfd1d7;
+  margin-top: 24px;
+  padding-top: 20px;
+}
+.reviewHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.reviewHeading h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.reviewHeading span {
+  font-size: 0.8rem;
+  color: #755e74;
+}
+.review > h4 {
+  margin: 18px 0 8px;
+}
+.review > p {
+  line-height: 1.8;
+}
+.section {
+  margin: 22px 0;
+}
+.section > h4 {
+  font-size: 0.9rem;
+  color: #755e74;
+  margin: 0 0 10px;
+}
+.question {
+  background: #fffcf7;
+  border: 1px solid #e5dacf;
+  border-radius: 12px;
+  margin: 8px 0;
+}
+.question summary {
+  padding: 14px;
+  cursor: pointer;
+  line-height: 1.7;
+}
+.question summary span {
+  font-size: 0.9rem;
+}
+.question summary small {
+  display: block;
+  margin-inline-start: 18px;
+  color: #947c91;
+  font-size: 0.75rem;
+}
+.questionBody {
+  padding: 0 16px 16px;
+}
+.include {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+.include input {
+  accent-color: #633e65;
+  width: 18px;
+  height: 18px;
+}
+.questionBody > small {
+  color: #947c91;
+}
+.options {
+  padding-inline-start: 24px;
+  color: #796c73;
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+.composer button:focus-visible,
+.question summary:focus-visible {
+  outline: 3px solid #a37ca4;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .composer {
+    padding: 18px;
+    border-radius: 17px;
+  }
+  .fields {
+    grid-template-columns: 1fr 95px;
+    gap: 10px;
+  }
+  .heading h2 {
+    font-size: 1.15rem;
+  }
+  .actions .primary {
+    width: 100%;
+  }
+  .reviewHeading {
+    align-items: flex-start;
+  }
+  .intro {
+    font-size: 0.9rem;
+  }
+}
+.heading {
+  cursor: pointer;
+  display: list-item;
+  line-height: 1.7;
+}
+.heading strong {
+  font-size: 1.05rem;
+}
+.heading .intro {
+  display: block;
+  margin: 3px 0 0;
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+.body {
+  padding-top: 20px;
+}

@@ -1,16 +1,20 @@
+import GoalSurveyComposer from "../../../components/GoalSurveyComposer";
+import Head from "next/head";
+import LanguageSwitcher from "../../../components/LanguageSwitcher";
+import styles from "../../../styles/Builder.module.css";
 import { useLocale } from "../../../i18n/LocaleProvider";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { apiClient, SURVEY_API } from "../../../services/api";
 import { Survey, Question, QUESTION_TYPES } from "../../../types/survey";
 import { AutoField } from "../../../components/AutoField";
 import { SurveyRunner } from "../../../components/SurveyRunner";
-import { savePendingFields } from "../../../services/autosave";
+import { registerSave, savePendingFields } from "../../../services/autosave";
 export default function Builder() {
   const { t } = useTranslation("survey");
-  const { direction } = useLocale();
+  const { direction, locale } = useLocale();
   const router = useRouter();
   const { query } = router;
   const id = query.id;
@@ -18,6 +22,9 @@ export default function Builder() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<number>();
+  const [selectedQuestion, setSelectedQuestion] = useState<number>();
+  const lastScrolledQuestion = useRef<number>();
   const load = async () => {
     if (!id) return;
     try {
@@ -29,6 +36,29 @@ export default function Builder() {
   useEffect(() => {
     load();
   }, [id]);
+  useEffect(() => {
+    if (
+      !selectedQuestion ||
+      selectedQuestion === lastScrolledQuestion.current ||
+      !survey?.sections.some((section) =>
+        section.questions.some((question) => question.id === selectedQuestion),
+      ) ||
+      !window.matchMedia("(max-width: 650px)").matches
+    )
+      return;
+    const frame = requestAnimationFrame(() => {
+      const editor = document.getElementById(`question-${selectedQuestion}`);
+      if (!editor) return;
+      lastScrolledQuestion.current = selectedQuestion;
+      editor.scrollIntoView({
+        block: "start",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedQuestion, survey]);
   const action = async (fn: () => Promise<unknown>) => {
     setBusy(true);
     setError("");
@@ -89,10 +119,43 @@ export default function Builder() {
       validation_rules: q.validation_rules,
       order,
     });
+  const activeSection =
+    survey.sections.find((s) => s.id === selectedSection) || survey.sections[0];
+  const activeQuestion =
+    activeSection?.questions.find((q) => q.id === selectedQuestion) ||
+    activeSection?.questions[0];
+  const createQuestion = (type: string) =>
+    action(async () => {
+      let section = activeSection;
+      if (!section) {
+        section = await apiClient.post(`${SURVEY_API}/sections/`, {
+          survey: survey.id,
+          title: t("newSection"),
+          description: "",
+          order: 0,
+        });
+      }
+      const defaults = questionDefaults(type, t);
+      const question = await apiClient.post<Question>(
+        `${SURVEY_API}/questions/`,
+        {
+          section: section!.id,
+          question_text: t("newQuestion"),
+          question_type: type,
+          is_required: false,
+          order: section!.questions?.length || 0,
+          ...defaults,
+        },
+      );
+      setSelectedSection(section!.id);
+      setSelectedQuestion(question.id);
+    });
   return (
-    <main dir={direction} className="min-h-screen bg-blue-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-4">
+    <main dir={direction} className={styles.builder}>
+      <Head><title>{t("builder")} | {survey.title}</title></Head>
+      <div className={styles.container}>
         <nav className="flex gap-4">
+          <LanguageSwitcher />
           <Link
             href="/surveys"
             onClick={(e) => {
@@ -126,388 +189,785 @@ export default function Builder() {
             {t("saveAll")}
           </button>
         </nav>
-        <h1 className="text-3xl font-bold">{t("builder")}</h1>
+        <header className={styles.heading}>
+          <div>
+            <h1>{survey.title || t("builder")}</h1>
+            <p>{t("studio.intro")}</p>
+          </div>
+          <span>
+            {t("studio.questionCount", {
+              count: survey.sections.flatMap((s) => s.questions).length,
+            })}
+          </span>
+        </header>
         {error && (
           <p role="alert" className="bg-red-50 text-red-800 p-4">
             {error}
           </p>
         )}
-        {locked && <p className="bg-yellow-50 p-4">{t("locked")}</p>}
+        {locked && (
+          <div className={styles.locked}>
+            <p>{t("locked")}</p>
+            <button
+              disabled={busy}
+              onClick={() =>
+                action(async () => {
+                  const draft = await apiClient.post<Survey>(
+                    `${SURVEY_API}/surveys/${survey.id}/duplicate/`,
+                    {},
+                  );
+                  await router.push(`/surveys/${draft.id}/edit`);
+                })
+              }
+            >
+              {t("studio.duplicateDraft")}
+            </button>
+          </div>
+        )}
         {preview ? (
           <SurveyRunner survey={survey} preview />
         ) : (
-          <fieldset disabled={busy || locked} className="space-y-4">
-            <section className="bg-white p-6 rounded shadow space-y-3">
-              <AutoField
-                label={t("title")}
-                value={survey.title}
-                onSave={async (title) => {
-                  await patch("surveys", survey.id, { title });
-                  setSurvey((current) =>
-                    current ? { ...current, title } : current,
-                  );
+          <fieldset disabled={busy || locked} className={styles.layout}>
+            <div className={styles.composer}>
+              <GoalSurveyComposer
+                surveyId={survey.id}
+                language={survey.settings?.language || locale}
+                disabled={busy || locked}
+                onApplied={(next) => {
+                  setSurvey(next);
+                  const section = next.sections[next.sections.length - 1];
+                  setSelectedSection(section?.id);
+                  setSelectedQuestion(section?.questions[0]?.id);
                 }}
               />
-              <AutoField
-                label={t("description")}
-                value={survey.description}
-                multiline
-                onSave={async (description) => {
-                  await patch("surveys", survey.id, { description });
-                  setSurvey((current) =>
-                    current ? { ...current, description } : current,
-                  );
-                }}
-              />
-              <label>
-                {t("language")}{" "}
-                <select
-                  value={survey.settings?.language || "fa"}
-                  onChange={(e) =>
-                    action(() =>
-                      patch("surveys", survey.id, {
-                        settings: {
-                          ...survey.settings,
-                          language: e.target.value,
-                        },
-                      }),
-                    )
-                  }
-                >
-                  <option value="fa">فارسی</option>
-                  <option value="en">English</option>
-                  <option value="fr">Français</option>
-                </select>
-              </label>
-              <label className="block">
-                <input
-                  type="checkbox"
-                  checked={!!survey.settings?.allow_multiple}
-                  onChange={(e) =>
-                    action(() =>
-                      patch("surveys", survey.id, {
-                        settings: {
-                          ...survey.settings,
-                          allow_multiple: e.target.checked,
-                        },
-                      }),
-                    )
-                  }
-                />{" "}
-                {t("multiple")}
-              </label>
-              <label className="block">
-                <input
-                  type="checkbox"
-                  checked={!!survey.settings?.invitation_only}
-                  onChange={(e) =>
-                    action(() =>
-                      patch("surveys", survey.id, {
-                        settings: {
-                          ...survey.settings,
-                          invitation_only: e.target.checked,
-                        },
-                      }),
-                    )
-                  }
-                />{" "}
-                {t("invitationOnly")}
-              </label>
-              {(["starts_at", "ends_at"] as const).map((key) => (
-                <label key={key} className="block">
-                  {key === "starts_at" ? t("starts") : t("ends")}
-                  <input
-                    type="datetime-local"
-                    className="border p-2 block"
-                    value={survey[key] ? localDateTime(survey[key]!) : ""}
-                    onChange={(e) =>
-                      action(() =>
-                        patch("surveys", survey.id, {
-                          [key]: e.target.value
-                            ? new Date(e.target.value).toISOString()
-                            : null,
-                        }),
-                      )
+            </div>
+            <aside className={styles.toolbox}>
+              <h2>{t("studio.addType")}</h2>
+              <p>{t("studio.typeHint")}</p>
+              <div className={styles.types}>
+                {QUESTION_TYPES.map(([type]) => (
+                  <button key={type} onClick={() => createQuestion(type)}>
+                    <TypeIcon type={type} />
+                    <span>{t(`type_${type}`)}</span>
+                  </button>
+                ))}
+              </div>
+              <h2>{t("studio.outline")}</h2>
+              {!survey.sections.length && <p>{t("studio.outlineEmpty")}</p>}
+              {survey.sections.map((section, index) => (
+                <div key={section.id} className={styles.outline}>
+                  <button
+                    className={
+                      activeSection?.id === section.id ? styles.active : ""
                     }
-                  />
-                </label>
+                    onClick={() =>
+                      action(async () => {
+                        setSelectedSection(section.id);
+                        setSelectedQuestion(section.questions[0]?.id);
+                      })
+                    }
+                  >
+                    {index + 1}. {section.title || t("newSection")}
+                  </button>
+                  {section.questions.map((q, index) => (
+                    <button
+                      key={q.id}
+                      className={
+                        activeQuestion?.id === q.id ? styles.active : ""
+                      }
+                      onClick={() =>
+                        action(async () => {
+                          setSelectedSection(section.id);
+                          setSelectedQuestion(q.id);
+                        })
+                      }
+                    >
+                      <span>{index + 1}</span>
+                      {q.question_text || t("studio.untitledQuestion")}
+                      <small>{t(`type_${q.question_type}`)}</small>
+                    </button>
+                  ))}
+                </div>
               ))}
-              <label className="block">
-                <input
-                  type="checkbox"
-                  checked={!!survey.settings?.randomize_options}
-                  onChange={(e) =>
-                    action(() =>
-                      patch("surveys", survey.id, {
-                        settings: {
-                          ...survey.settings,
-                          randomize_options: e.target.checked,
-                        },
-                      }),
-                    )
-                  }
-                />{" "}
-                {t("randomize")}
-              </label>{" "}
-            </section>
-            {!survey.sections.length && (
-              <p className="bg-white p-6 rounded">{t("noSections")}</p>
-            )}
-            {survey.sections.map((section, si) => (
-              <section
-                key={section.id}
-                className="bg-white p-5 rounded shadow space-y-4"
-              >
-                <div className="flex flex-wrap gap-3">
-                  <h2 className="font-bold">
-                    {t("sectionNumber", { number: si + 1 })}
-                  </h2>
-                  <button
-                    aria-label={t("moveUp")}
-                    disabled={si === 0}
-                    onClick={() =>
-                      action(() => reorder("sections", survey.sections, si, -1))
-                    }
-                  >
-                    ↑
-                  </button>
-                  <button
-                    aria-label={t("moveDown")}
-                    disabled={si === survey.sections.length - 1}
-                    onClick={() =>
-                      action(() => reorder("sections", survey.sections, si, 1))
-                    }
-                  >
-                    ↓
-                  </button>
-                  <button
-                    onClick={() =>
-                      action(() =>
-                        apiClient.post(
-                          `${SURVEY_API}/sections/${section.id}/duplicate/`,
-                          {},
-                        ),
-                      )
-                    }
-                  >
-                    {t("copySection")}
-                  </button>
-                  <button
-                    className="text-red-700"
-                    onClick={() => {
-                      if (confirm(t("confirmSection")))
-                        action(() =>
-                          apiClient.delete(
-                            `${SURVEY_API}/sections/${section.id}/`,
-                          ),
-                        );
+            </aside>
+            <div className={styles.canvas}>
+              <details className={styles.settings}>
+                <summary>{t("studio.surveySettings")}</summary>
+                <section className="bg-white p-6 rounded shadow space-y-3">
+                  <AutoField
+                    label={t("title")}
+                    value={survey.title}
+                    onSave={async (title) => {
+                      await patch("surveys", survey.id, { title });
+                      setSurvey((current) =>
+                        current ? { ...current, title } : current,
+                      );
                     }}
-                  >
-                    {t("deleteSection")}
+                  />
+                  <AutoField
+                    label={t("description")}
+                    value={survey.description}
+                    multiline
+                    onSave={async (description) => {
+                      await patch("surveys", survey.id, { description });
+                      setSurvey((current) =>
+                        current ? { ...current, description } : current,
+                      );
+                    }}
+                  />
+                  <label>
+                    {t("language")}{" "}
+                    <select
+                      value={survey.settings?.language || "fa"}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        action(() =>
+                          patch("surveys", survey.id, {
+                            settings: {
+                              ...survey.settings,
+                              language: value,
+                            },
+                          }),
+                        );
+                      }}
+                    >
+                      <option value="fa">فارسی</option>
+                      <option value="en">English</option>
+                      <option value="fr">Français</option>
+                    </select>
+                  </label>
+                  <label className="block">
+                    <input
+                      type="checkbox"
+                      checked={!!survey.settings?.allow_multiple}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        action(() =>
+                          patch("surveys", survey.id, {
+                            settings: {
+                              ...survey.settings,
+                              allow_multiple: checked,
+                            },
+                          }),
+                        );
+                      }}
+                    />{" "}
+                    {t("multiple")}
+                  </label>
+                  <label className="block">
+                    <input
+                      type="checkbox"
+                      checked={!!survey.settings?.invitation_only}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        action(() =>
+                          patch("surveys", survey.id, {
+                            settings: {
+                              ...survey.settings,
+                              invitation_only: checked,
+                            },
+                          }),
+                        );
+                      }}
+                    />{" "}
+                    {t("invitationOnly")}
+                  </label>
+                  {(["starts_at", "ends_at"] as const).map((key) => (
+                    <label key={key} className="block">
+                      {key === "starts_at" ? t("starts") : t("ends")}
+                      <input
+                        type="datetime-local"
+                        className="border p-2 block"
+                        value={survey[key] ? localDateTime(survey[key]!) : ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          action(() =>
+                            patch("surveys", survey.id, {
+                              [key]: value
+                                ? new Date(value).toISOString()
+                                : null,
+                            }),
+                          );
+                        }}
+                      />
+                    </label>
+                  ))}
+                  <label className="block">
+                    <input
+                      type="checkbox"
+                      checked={!!survey.settings?.randomize_options}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        action(() =>
+                          patch("surveys", survey.id, {
+                            settings: {
+                              ...survey.settings,
+                              randomize_options: checked,
+                            },
+                          }),
+                        );
+                      }}
+                    />{" "}
+                    {t("randomize")}
+                  </label>{" "}
+                </section>
+              </details>
+              {!survey.sections.length && (
+                <div className={styles.empty}>
+                  <h2>{t("studio.startTitle")}</h2>
+                  <p>{t("studio.startHint")}</p>
+                  <button onClick={() => createQuestion("single_choice")}>
+                    {t("studio.startChoice")}
                   </button>
                 </div>
-                <AutoField
-                  label={t("sectionTitle")}
-                  value={section.title}
-                  onSave={(title) => patch("sections", section.id, { title })}
-                />
-                <AutoField
-                  label={t("sectionDescription")}
-                  value={section.description}
-                  onSave={(description) =>
-                    patch("sections", section.id, { description })
-                  }
-                />
-                {!section.questions.length && (
-                  <p className="text-gray-600">{t("noQuestions")}</p>
-                )}
-                {section.questions.map((q, qi) => (
-                  <article key={q.id} className="border rounded p-4 space-y-3">
-                    <div className="flex flex-wrap gap-3">
-                      <span>
-                        {t("questionNumber", { number: qi + 1, id: q.id })}
-                      </span>
-                      <button
-                        aria-label={t("moveUp")}
-                        disabled={qi === 0}
-                        onClick={() =>
-                          action(() =>
-                            reorder("questions", section.questions, qi, -1),
-                          )
-                        }
-                      >
-                        ↑
-                      </button>
-                      <button
-                        aria-label={t("moveDown")}
-                        disabled={qi === section.questions.length - 1}
-                        onClick={() =>
-                          action(() =>
-                            reorder("questions", section.questions, qi, 1),
-                          )
-                        }
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() =>
-                          action(() =>
-                            copy(q, section.id, section.questions.length),
-                          )
-                        }
-                      >
-                        {t("copy")}
-                      </button>
-                      <button
-                        className="text-red-700"
-                        onClick={() => {
-                          if (confirm(t("confirmQuestion")))
+              )}
+              {survey.sections.map(
+                (section, si) =>
+                  activeSection?.id === section.id && (
+                    <section
+                      key={section.id}
+                      className="bg-white p-5 rounded shadow space-y-4"
+                    >
+                      <div className="flex flex-wrap gap-3">
+                        <h2 className="font-bold">
+                          {t("sectionNumber", { number: si + 1 })}
+                        </h2>
+                        <button
+                          aria-label={t("moveUp")}
+                          disabled={si === 0}
+                          onClick={() =>
                             action(() =>
-                              apiClient.delete(
-                                `${SURVEY_API}/questions/${q.id}/`,
-                              ),
-                            );
-                        }}
-                      >
-                        {t("delete")}
-                      </button>
-                      <label>
-                        {t("moveTo")}{" "}
-                        <select
-                          value={section.id}
-                          onChange={(e) =>
-                            action(() =>
-                              patch("questions", q.id, {
-                                section: Number(e.target.value),
-                                order:
-                                  survey.sections.find(
-                                    (s) => s.id === Number(e.target.value),
-                                  )?.questions.length || 0,
-                              }),
+                              reorder("sections", survey.sections, si, -1),
                             )
                           }
                         >
-                          {survey.sections.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.title}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <AutoField
-                      label={t("questionText")}
-                      value={q.question_text}
-                      multiline
-                      onSave={(question_text) =>
-                        questionUpdate(q, { question_text })
-                      }
-                    />
-                    <label>
-                      {t("type")}{" "}
-                      <select
-                        value={q.question_type}
-                        onChange={(e) =>
-                          action(() =>
-                            questionUpdate(q, {
-                              question_type: e.target.value,
-                            }),
-                          )
-                        }
-                      >
-                        {QUESTION_TYPES.map(([value]) => (
-                          <option key={value} value={value}>
-                            {t(`type_${value}`)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="block">
-                      <input
-                        type="checkbox"
-                        checked={q.is_required}
-                        onChange={(e) =>
-                          action(() =>
-                            questionUpdate(q, {
-                              is_required: e.target.checked,
-                            }),
-                          )
-                        }
-                      />{" "}
-                      {t("required")}
-                    </label>
-                    {[
-                      "single_choice",
-                      "multiple_choice",
-                      "ranking",
-                      "scale",
-                    ].includes(q.question_type) && (
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            aria-hidden="true"
+                          >
+                            <path d="M12 20V4M5 11l7-7 7 7" />
+                          </svg>
+                        </button>
+                        <button
+                          aria-label={t("moveDown")}
+                          disabled={si === survey.sections.length - 1}
+                          onClick={() =>
+                            action(() =>
+                              reorder("sections", survey.sections, si, 1),
+                            )
+                          }
+                        >
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            aria-hidden="true"
+                          >
+                            <path d="M12 4v16M5 13l7 7 7-7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() =>
+                            action(() =>
+                              apiClient.post(
+                                `${SURVEY_API}/sections/${section.id}/duplicate/`,
+                                {},
+                              ),
+                            )
+                          }
+                        >
+                          {t("copySection")}
+                        </button>
+                        <button
+                          className="text-red-700"
+                          onClick={() => {
+                            if (confirm(t("confirmSection")))
+                              action(() =>
+                                apiClient.delete(
+                                  `${SURVEY_API}/sections/${section.id}/`,
+                                ),
+                              );
+                          }}
+                        >
+                          {t("deleteSection")}
+                        </button>
+                      </div>
                       <AutoField
-                        label={t("options")}
-                        value={(q.options || []).join("\n")}
-                        multiline
-                        onSave={(value) =>
-                          questionUpdate(q, {
-                            options: value
-                              .split("\n")
-                              .map((x) => x.trim())
-                              .filter(Boolean),
-                          })
+                        label={t("sectionTitle")}
+                        value={section.title}
+                        onSave={async (title) => {
+                          await patch("sections", section.id, { title });
+                          setSurvey((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  sections: current.sections.map((item) =>
+                                    item.id === section.id
+                                      ? { ...item, title }
+                                      : item,
+                                  ),
+                                }
+                              : current,
+                          );
+                        }}
+                      />
+                      <AutoField
+                        label={t("sectionDescription")}
+                        value={section.description}
+                        onSave={(description) =>
+                          patch("sections", section.id, { description })
                         }
                       />
-                    )}
-                    <details>
-                      <summary>{t("logic")}</summary>
-                      <RuleEditor
-                        question={q}
-                        questions={survey.sections.flatMap((s) => s.questions)}
-                        save={(rules) =>
-                          questionUpdate(q, { validation_rules: rules })
-                        }
-                      />
-                    </details>
-                  </article>
-                ))}
-                <button
-                  className="border border-dashed p-3 w-full"
-                  onClick={() =>
-                    action(() =>
-                      apiClient.post(`${SURVEY_API}/questions/`, {
-                        section: section.id,
-                        question_text: t("newQuestion"),
-                        question_type: "text",
-                        is_required: false,
-                        order: section.questions.length,
-                        options: [],
-                        validation_rules: {},
-                      }),
-                    )
-                  }
-                >
-                  {t("addQuestion")}
-                </button>
-              </section>
-            ))}
-            <button
-              className="bg-blue-600 text-white p-3 rounded"
-              onClick={() =>
-                action(() =>
-                  apiClient.post(`${SURVEY_API}/sections/`, {
-                    survey: survey.id,
-                    title: t("newSection"),
-                    description: "",
-                    order: survey.sections.length,
-                  }),
-                )
-              }
-            >
-              {t("addSection")}
-            </button>
+                      {!section.questions.length && (
+                        <p className="text-gray-600">{t("noQuestions")}</p>
+                      )}
+                      {section.questions.map(
+                        (q, qi) =>
+                          activeQuestion?.id === q.id && (
+                            <article
+                              key={q.id}
+                              id={`question-${q.id}`}
+                              className={`${styles.question} ${activeQuestion?.id === q.id ? styles.selected : ""}`}
+                              onFocus={() => setSelectedQuestion(q.id)}
+                            >
+                              <div className="flex flex-wrap gap-3">
+                                <span>
+                                  {t("studio.questionNumber", {
+                                    number: qi + 1,
+                                    id: q.id,
+                                  })}
+                                </span>
+                                <button
+                                  aria-label={t("moveUp")}
+                                  disabled={qi === 0}
+                                  onClick={() =>
+                                    action(() =>
+                                      reorder(
+                                        "questions",
+                                        section.questions,
+                                        qi,
+                                        -1,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <svg
+                                    width="18"
+                                    height="18"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.7"
+                                    aria-hidden="true"
+                                  >
+                                    <path d="M12 20V4M5 11l7-7 7 7" />
+                                  </svg>
+                                </button>
+                                <button
+                                  aria-label={t("moveDown")}
+                                  disabled={qi === section.questions.length - 1}
+                                  onClick={() =>
+                                    action(() =>
+                                      reorder(
+                                        "questions",
+                                        section.questions,
+                                        qi,
+                                        1,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <svg
+                                    width="18"
+                                    height="18"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.7"
+                                    aria-hidden="true"
+                                  >
+                                    <path d="M12 4v16M5 13l7 7 7-7" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    action(() =>
+                                      copy(
+                                        q,
+                                        section.id,
+                                        section.questions.length,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  {t("copy")}
+                                </button>
+                                <button
+                                  className="text-red-700"
+                                  onClick={() => {
+                                    if (confirm(t("confirmQuestion")))
+                                      action(async () => {
+                                        await apiClient.delete(
+                                          `${SURVEY_API}/questions/${q.id}/`,
+                                        );
+                                        setSelectedQuestion(undefined);
+                                      });
+                                  }}
+                                >
+                                  {t("delete")}
+                                </button>
+                                <label>
+                                  {t("moveTo")}{" "}
+                                  <select
+                                    value={section.id}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      action(() =>
+                                        patch("questions", q.id, {
+                                          section: Number(value),
+                                          order:
+                                            survey.sections.find(
+                                              (s) => s.id === Number(value),
+                                            )?.questions.length || 0,
+                                        }),
+                                      );
+                                    }}
+                                  >
+                                    {survey.sections.map((s) => (
+                                      <option key={s.id} value={s.id}>
+                                        {s.title}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              </div>
+                              <AutoField
+                                label={t("studio.questionWording")}
+                                value={q.question_text}
+                                multiline
+                                onSave={(question_text) =>
+                                  questionUpdate(q, { question_text })
+                                }
+                              />
+                              <label>
+                                {t("type")}{" "}
+                                <select
+                                  value={q.question_type}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    action(() =>
+                                      questionUpdate(q, {
+                                        question_type: value,
+                                        ...questionDefaults(value, t),
+                                      }),
+                                    );
+                                  }}
+                                >
+                                  {QUESTION_TYPES.map(([value]) => (
+                                    <option key={value} value={value}>
+                                      {t(`type_${value}`)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="block">
+                                <input
+                                  type="checkbox"
+                                  checked={q.is_required}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    action(() =>
+                                      questionUpdate(q, {
+                                        is_required: checked,
+                                      }),
+                                    );
+                                  }}
+                                />{" "}
+                                {t("required")}
+                              </label>
+                              {[
+                                "single_choice",
+                                "multiple_choice",
+                                "ranking",
+                                "scale",
+                              ].includes(q.question_type) && (
+                                <OptionsEditor
+                                  key={`${q.id}-${q.question_type}`}
+                                  value={q.options || []}
+                                  save={(options) =>
+                                    questionUpdate(q, { options })
+                                  }
+                                />
+                              )}
+                              <details open={q.question_type === "matrix"}>
+                                <summary>
+                                  {q.question_type === "matrix"
+                                    ? t("studio.matrixSettings")
+                                    : t("logic")}
+                                </summary>
+                                <RuleEditor
+                                  key={`${q.id}-${q.question_type}`}
+                                  question={q}
+                                  questions={survey.sections.flatMap(
+                                    (s) => s.questions,
+                                  )}
+                                  save={(rules) =>
+                                    questionUpdate(q, {
+                                      validation_rules: rules,
+                                    })
+                                  }
+                                />
+                              </details>
+                            </article>
+                          ),
+                      )}
+                      <button
+                        className="border border-dashed p-3 w-full"
+                        onClick={() => createQuestion("text")}
+                      >
+                        {t("addQuestion")}
+                      </button>
+                    </section>
+                  ),
+              )}
+              <button
+                className={styles.addSection}
+                onClick={() =>
+                  action(async () => {
+                    const section = await apiClient.post<{ id: number }>(
+                      `${SURVEY_API}/sections/`,
+                      {
+                        survey: survey.id,
+                        title: t("newSection"),
+                        description: "",
+                        order: survey.sections.length,
+                      },
+                    );
+                    setSelectedSection(section.id);
+                    setSelectedQuestion(undefined);
+                  })
+                }
+              >
+                {t("addSection")}
+              </button>
+            </div>
           </fieldset>
         )}
       </div>
     </main>
   );
+}
+function OptionsEditor({
+  value,
+  save,
+}: {
+  value: string[];
+  save: (options: string[]) => Promise<void>;
+}) {
+  const { t } = useTranslation("survey");
+  const [draft, setDraft] = useState(value);
+  const [status, setStatus] = useState("");
+  const [failed, setFailed] = useState(false);
+  const draftRef = useRef(value);
+  const dirty = useRef(false);
+  const revision = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const saver = useRef(save);
+  const sequence = useRef(Promise.resolve());
+  saver.current = save;
+  const flush = () => {
+    if (timer.current) clearTimeout(timer.current);
+    sequence.current = sequence.current
+      .catch(() => {})
+      .then(async () => {
+        if (!dirty.current) return;
+        const snapshot = [...draftRef.current];
+        const savingRevision = revision.current;
+        setStatus("saving");
+        setFailed(false);
+        try {
+          await saver.current(snapshot);
+          if (savingRevision === revision.current) dirty.current = false;
+          setStatus(dirty.current ? "unsaved" : "saved");
+        } catch (error) {
+          dirty.current = true;
+          setFailed(true);
+          setStatus(String(error));
+          throw error;
+        }
+      });
+    sequence.current.catch(() => {});
+    return sequence.current;
+  };
+  useEffect(() => {
+    if (!dirty.current) {
+      draftRef.current = value;
+      setDraft(value);
+    }
+  }, [value]);
+  useEffect(() => {
+    const unregister = registerSave(flush);
+    const warn = (event: BeforeUnloadEvent) => {
+      if (dirty.current) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => {
+      unregister();
+      window.removeEventListener("beforeunload", warn);
+      flush().catch(() => {});
+    };
+  }, []);
+  const change = (next: string[], immediately = false) => {
+    draftRef.current = next;
+    setDraft(next);
+    revision.current++;
+    dirty.current = true;
+    setFailed(false);
+    setStatus("unsaved");
+    if (timer.current) clearTimeout(timer.current);
+    if (immediately) flush().catch(() => {});
+    else
+      timer.current = setTimeout(() => {
+        flush().catch(() => {});
+      }, 900);
+  };
+  return (
+    <div className={styles.options}>
+      <h3>{t("options")}</h3>
+      {draft.map((option, index) => (
+        <div className={styles.optionRow} key={index}>
+          <label>
+            {t("studio.optionNumber", { number: index + 1 })}
+            <input
+              value={option}
+              onChange={(event) => {
+                const next = [...draftRef.current];
+                next[index] = event.target.value;
+                change(next);
+              }}
+              onBlur={() => {
+                flush().catch(() => {});
+              }}
+            />
+          </label>
+          <button
+            disabled={draft.length <= 2}
+            aria-label={t("studio.removeOption", { number: index + 1 })}
+            onClick={() =>
+              change(
+                draftRef.current.filter((_, i) => i !== index),
+                true,
+              )
+            }
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M6 18L18 6" />
+            </svg>
+          </button>
+        </div>
+      ))}
+      <button
+        onClick={() =>
+          change(
+            [
+              ...draftRef.current,
+              t("studio.optionNumber", { number: draftRef.current.length + 1 }),
+            ],
+            true,
+          )
+        }
+      >
+        {t("studio.addOption")}
+      </button>
+      <p role="status">
+        {failed ? t("error", { message: status }) : status ? t(status) : ""}
+      </p>
+      {failed && (
+        <button
+          onClick={() => {
+            flush().catch(() => {});
+          }}
+        >
+          {t("retry")}
+        </button>
+      )}
+    </div>
+  );
+}
+function TypeIcon({ type }: { type: string }) {
+  const paths: Record<string, string> = {
+    text: "M5 6h14M5 12h14M5 18h9",
+    email: "M4 6h16v12H4zM4 6l8 6 8-6",
+    number: "M9 3L7 21M17 3l-2 18M4 9h17M3 15h17",
+    single_choice: "M5 7h1M10 7h10M5 12h1M10 12h10M5 17h1M10 17h10",
+    multiple_choice: "M3 5h5v5H3zM11 7h10M3 14h5v5H3zM11 16h10",
+    boolean: "M3 12l5 5L20 5",
+    rating: "M12 3l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z",
+    scale: "M4 12h16M4 8v8M10 8v8M16 8v8M20 8v8",
+    nps: "M4 17l5-5 4 3 7-10M15 5h5v5",
+    matrix: "M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18",
+    ranking: "M4 5h2M10 5h10M4 12h2M10 12h7M4 19h2M10 19h4",
+    date: "M4 5h16v16H4zM4 10h16M8 3v4M16 3v4",
+  };
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={paths[type]} />
+    </svg>
+  );
+}
+function questionDefaults(
+  type: string,
+  t: (key: string, options?: any) => string,
+) {
+  const options = ["single_choice", "multiple_choice", "ranking"].includes(type)
+    ? [1, 2, 3].map((number) => t("studio.optionNumber", { number }))
+    : type === "scale"
+      ? ["studio.disagree", "studio.neutral", "studio.agree"].map((key) =>
+          t(key),
+        )
+      : [];
+  const validation_rules =
+    type === "rating"
+      ? { min: 1, max: 5 }
+      : type === "nps"
+        ? { min: 0, max: 10 }
+        : type === "matrix"
+          ? {
+              rows: [
+                t("studio.rowNumber", { number: 1 }),
+                t("studio.rowNumber", { number: 2 }),
+              ],
+              columns: [t("studio.disagree"), t("studio.agree")],
+            }
+          : {};
+  return { options, validation_rules };
 }
 function conditionDefault(question?: Question) {
   return question?.question_type === "boolean"
