@@ -1,0 +1,5 @@
+export interface Rules { min?: number; max?: number; min_length?: number; max_length?: number; min_choices?: number; max_choices?: number; rows?: string[]; columns?: string[]; display_if?: {question: number; operator: string; value?: unknown}; jump_to?: Record<string, number>; }
+export interface Question {id: number; section: number; question_text: string; question_type: string; is_required: boolean; order: number; options: string[]; validation_rules: Rules;}
+export interface Section {id: number; survey: number; title: string; description: string; order: number; questions: Question[];}
+export interface Survey {id: number; title: string; description: string; status: string; sections: Section[]; settings: Record<string, any>; participant_count?: number; submission_count?: number; published_version?: number;}
+export const QUESTION_TYPES = [['text','متن'],['email','ایمیل'],['number','عدد'],['single_choice','تک انتخابی'],['multiple_choice','چند انتخابی'],['boolean','بله / خیر'],['rating','امتیاز'],['scale','لیکرت'],['nps','NPS'],['matrix','ماتریس'],['ranking','رتبه بندی'],['date','تاریخ']];
