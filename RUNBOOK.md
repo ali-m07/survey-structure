@@ -102,3 +102,12 @@ Configure server-only `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_TIMEOUT` (up
 For the local Windows Docker setup, use `AI_PROVIDER=ollama` and `AI_BASE_URL=http://host.docker.internal:11434`. Download a model on the host and use its exact name in `AI_MODEL`. The local build uses `registry.ollama.com/library/qwen3:1.7b`; the alternate official registry is useful when the default registry cannot be reached. Model weights are not committed or included in the application image. Manual creation works if generation is unavailable.
 
 Provider configuration examples are in `deployment/.env.example`. Production must use a model service reachable from the API container. The model's output is a draft suggestion requiring human review, not a validated research instrument.
+## Rich question authoring and bulk import
+
+Select a question type in the toolbox to see its actual answer control. NPS has a fixed 0–10 scale. In question settings, select an earlier question, an operator and a value to conditionally display the selected question, then save settings and logic. The first question cannot depend on an earlier answer.
+
+Open **Formatted question (HTML)** to enter markup or apply the formatting buttons. Keep plain wording for accessible fallback and exports. Text formatting, lists, tables and links are supported; scripts, event handlers, images and embedded documents are removed. Preview before publishing.
+
+Open **Import a question list** and paste one question per line; numbered prefixes are removed. Review the parsed count and choose **Add N questions**. Typed JSON can set question types, choices, validation rules and `question_html`. The endpoint accepts 1–100 questions per batch and appends them to the selected page. Invalid batches are rejected atomically. Import requires an editable draft whose complete structure is valid.
+
+The API adds `question_html` through migration `0007_question_question_html`. Rebuild both API and web images and run the canonical Compose migration service before updating an existing deployment. See THIRD_PARTY.md for the sanitizer dependencies and upstream references.
