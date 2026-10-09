@@ -107,3 +107,6 @@ deployment/.env.*
 !deployment/.env.*.example
 backups/
 
+
+# Local visual review captures
+.impeccable/review/
