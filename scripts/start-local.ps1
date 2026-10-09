@@ -25,6 +25,21 @@ if (!(Get-NetTCPConnection -State Listen -LocalPort 8003 -ErrorAction SilentlyCo
 if (!(Get-NetTCPConnection -State Listen -LocalPort 3000 -ErrorAction SilentlyContinue)) {
     $running += Start-Process -FilePath (Get-Command node.exe).Source -ArgumentList 'node_modules/next/dist/bin/next','dev','--hostname','127.0.0.1','--port','3000' -WorkingDirectory (Join-Path $project 'frontend') -WindowStyle Hidden -RedirectStandardOutput (Join-Path $logs 'survey-web.log') -RedirectStandardError (Join-Path $logs 'survey-web-error.log') -PassThru
 }
+$jobsStateFile = Join-Path $logs 'survey-jobs.pid'
+$jobsActive = $false
+if (Test-Path $jobsStateFile) {
+    $jobsId = Get-Content $jobsStateFile -Raw
+    if ($jobsId -match '^\s*\d+\s*$') {
+        $jobsProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$jobsId)"
+        $jobsActive = $jobsProcess -and $jobsProcess.ExecutablePath -eq $python -and $jobsProcess.CommandLine -match 'manage.py.*run_survey_jobs'
+    }
+}
+if (!$jobsActive) {
+    $jobsProcess = Start-Process -FilePath $python -ArgumentList 'manage.py','run_survey_jobs','--interval','30' -WorkingDirectory $service -WindowStyle Hidden -RedirectStandardOutput (Join-Path $logs 'survey-jobs.log') -RedirectStandardError (Join-Path $logs 'survey-jobs-error.log') -PassThru
+    $jobsProcess.Id | Set-Content $jobsStateFile
+    $running += $jobsProcess
+}
 $running | Select-Object Id,ProcessName
 Write-Host 'Web: http://localhost:3000 | API health: http://localhost:8003/health'
 Write-Host 'Create the administrator using the bootstrap_survey_admin command in RUNBOOK.md.'
+

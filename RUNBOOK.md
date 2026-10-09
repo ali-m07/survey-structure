@@ -37,7 +37,7 @@ docker compose --env-file deployment/.env.local -f docker-compose.survey.yml ps
 docker compose --env-file deployment/.env.local -f docker-compose.survey.yml logs --tail 100 api web migrate
 ```
 
-ابتدا postgres سالم می‌شود، سپس migration اجرا می‌شود و بعد API و وب شروع می‌شوند. ایجاد مدیر داخل کانتینر:
+ابتدا postgres سالم می‌شود، سپس migration اجرا می‌شود و بعد API، وب و worker پس‌زمینه شروع می‌شوند. سرویس `jobs` هر ۳۰ ثانیه صف webhook و یادآوری‌های فعال را بررسی می‌کند؛ شکست ارسال در logs و مدل تلاش‌ها قابل مشاهده است. یادآوری فقط با `reminders_enabled` و بعد از دعوت موفق فعال می‌شود. ایجاد مدیر داخل کانتینر:
 
 ```powershell
 docker compose --env-file deployment/.env.local -f docker-compose.survey.yml exec -e ADMIN_PASSWORD api python manage.py bootstrap_survey_admin --username admin --tenant default
@@ -80,5 +80,6 @@ docker compose --env-file deployment/.env.production -f docker-compose.survey.ym
 ```
 
 healthcheck API سلامت HTTP فرایند را نشان می‌دهد؛ به تنهایی صحت SMTP، دیتابیس یا کل چرخه پرسشنامه را اثبات نمی‌کند. برای مانیتورینگ عملیاتی بررسی دوره‌ای چرخه پاسخ و سلامت دیتابیس اضافه کنید. فایل‌های محیط، logs و بکاپ‌ها نباید عمومی شوند.
+
 
 

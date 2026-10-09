@@ -62,6 +62,14 @@ services:
       interval: 15s
       timeout: 6s
       retries: 5
+  jobs:
+    image: survey-api:${RELEASE_TAG:-local}
+    restart: unless-stopped
+    environment: *api_environment
+    command: [python, manage.py, run_survey_jobs, --interval, '30']
+    depends_on:
+      api:
+        condition: service_healthy
   web:
     image: survey-web:${RELEASE_TAG:-local}
     build:
@@ -94,12 +102,21 @@ services:
       - survey_tls:/data
       - survey_proxy_config:/config
     depends_on:
-      web:
+      jobs:
+    image: survey-api:${RELEASE_TAG:-local}
+    restart: unless-stopped
+    environment: *api_environment
+    command: [python, manage.py, run_survey_jobs, --interval, '30']
+    depends_on:
+      api:
+        condition: service_healthy
+  web:
         condition: service_healthy
 volumes:
   survey_database:
   survey_media:
   survey_tls:
   survey_proxy_config:
+
 
 
