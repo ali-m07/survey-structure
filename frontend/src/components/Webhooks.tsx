@@ -116,8 +116,7 @@ export function Webhooks({ surveyId }: { surveyId: number }) {
       ))}
       {deliveries.map((d) => (
         <p key={d.id}>
-          رویداد {d.id} · {d.status} · تلاش‌ها: {d.attempts}{" "}
-          {d.last_error || ""}
+          رویداد {d.id} · {d.status} · تلاش‌ها: {d.attempts} {d.error || ""}
         </p>
       ))}
     </section>

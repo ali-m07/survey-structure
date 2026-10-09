@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { registerSave } from "../services/autosave";
 export function AutoField({
   value,
   onSave,
@@ -17,13 +18,15 @@ export function AutoField({
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const sequence = useRef(Promise.resolve());
   const pending = useRef<string | null>(null);
+  const inFlight = useRef(0);
   const saver = useRef(onSave);
   saver.current = onSave;
   const flush = () => {
     if (timer.current) clearTimeout(timer.current);
     const next = pending.current;
-    if (next === null) return;
+    if (next === null) return sequence.current;
     pending.current = null;
+    inFlight.current++;
     setStatus("در حال ذخیره…");
     sequence.current = sequence.current
       .catch(() => {})
@@ -32,24 +35,32 @@ export function AutoField({
         setStatus(pending.current === null ? "ذخیره شد" : "ذخیره نشده"),
       )
       .catch((e) => {
-        pending.current = next;
+        if (pending.current === null) pending.current = next;
         setStatus(`خطا: ${String(e)}`);
+        throw e;
+      })
+      .finally(() => {
+        inFlight.current--;
       });
+    sequence.current.catch(() => {});
+    return sequence.current;
   };
   useEffect(() => {
-    if (pending.current === null) setDraft(value);
+    if (pending.current === null && !inFlight.current) setDraft(value);
   }, [value]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (pending.current !== null) {
+      if (pending.current !== null || inFlight.current) {
         event.preventDefault();
         event.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", warn);
+    const unregister = registerSave(flush);
     return () => {
+      unregister();
       window.removeEventListener("beforeunload", warn);
-      flush();
+      flush().catch(() => {});
     };
   }, []);
   const change = (v: string) => {
@@ -57,13 +68,17 @@ export function AutoField({
     pending.current = v;
     setStatus("ذخیره نشده");
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(flush, 900);
+    timer.current = setTimeout(() => {
+      flush().catch(() => {});
+    }, 900);
   };
   const props = {
     value: draft,
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       change(e.target.value),
-    onBlur: flush,
+    onBlur: () => {
+      flush().catch(() => {});
+    },
     disabled,
     className: "block border p-2 rounded w-full",
   };
@@ -75,7 +90,13 @@ export function AutoField({
         {status}
       </span>
       {status.startsWith("خطا:") && (
-        <button type="button" className="border p-1" onClick={flush}>
+        <button
+          type="button"
+          className="border p-1"
+          onClick={() => {
+            flush().catch(() => {});
+          }}
+        >
           تلاش مجدد
         </button>
       )}

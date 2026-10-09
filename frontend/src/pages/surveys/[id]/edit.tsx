@@ -5,8 +5,10 @@ import { apiClient, SURVEY_API } from "../../../services/api";
 import { Survey, Question, QUESTION_TYPES } from "../../../types/survey";
 import { AutoField } from "../../../components/AutoField";
 import { SurveyRunner } from "../../../components/SurveyRunner";
+import { savePendingFields } from "../../../services/autosave";
 export default function Builder() {
-  const { query } = useRouter();
+  const router = useRouter();
+  const { query } = router;
   const id = query.id;
   const [survey, setSurvey] = useState<Survey>();
   const [error, setError] = useState("");
@@ -27,6 +29,7 @@ export default function Builder() {
     setBusy(true);
     setError("");
     try {
+      await savePendingFields();
       await fn();
       await load();
     } catch (e) {
@@ -86,10 +89,37 @@ export default function Builder() {
     <main dir="rtl" className="min-h-screen bg-blue-50 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-4">
         <nav className="flex gap-4">
-          <Link href="/surveys">پرسشنامه‌ها</Link>
-          <Link href={`/surveys/${id}`}>انتشار و گزارش</Link>
-          <button onClick={() => setPreview(!preview)}>
+          <Link
+            href="/surveys"
+            onClick={(e) => {
+              e.preventDefault();
+              action(() => router.push("/surveys"));
+            }}
+          >
+            پرسشنامه‌ها
+          </Link>
+          <Link
+            href={`/surveys/${id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              action(() => router.push(`/surveys/${id}`));
+            }}
+          >
+            انتشار و گزارش
+          </Link>
+          <button
+            disabled={busy}
+            onClick={() =>
+              action(async () => {
+                await load();
+                setPreview(!preview);
+              })
+            }
+          >
             {preview ? "ویرایش" : "پیش‌نمایش"}
+          </button>
+          <button disabled={busy} onClick={() => action(async () => {})}>
+            ذخیره همه تغییرات
           </button>
         </nav>
         <h1 className="text-3xl font-bold">سازنده پرسشنامه</h1>
