@@ -1,14 +1,25 @@
-import { CSSProperties, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { CSSProperties, useEffect, useState } from "react";
 export default function SurveyScene({
   compact = false,
 }: {
   compact?: boolean;
 }) {
+  const { t } = useTranslation("scene");
+  const choices = t("scene.choices", { returnObjects: true }) as string[];
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setPaused(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [answer, setAnswer] = useState<number | null>(null);
   return (
     <div
-      className={`pn-scene ${compact ? "pn-scene-compact" : ""}`}
+      className={`pn-scene ${compact ? "pn-scene-compact" : ""} ${paused ? "is-paused" : "is-playing"}`}
       onPointerMove={(e) => {
         if (e.pointerType !== "mouse") return;
         const rect = e.currentTarget.getBoundingClientRect();
@@ -29,7 +40,7 @@ export default function SurveyScene({
         }
       >
         <div className="pn-sheet pn-sheet-back" aria-hidden="true">
-          <span>از پاسخ به بینش</span>
+          <span>{t("scene.insights")}</span>
           <div className="pn-demo-bars">
             {[35, 65, 48, 86, 72].map((height, i) => (
               <i key={i} style={{ height: `${height}%` }} />
@@ -37,7 +48,7 @@ export default function SurveyScene({
           </div>
         </div>
         <div className="pn-sheet pn-sheet-middle" aria-hidden="true">
-          <span>یک مسیر، چند انتخاب</span>
+          <span>{t("scene.path")}</span>
           <div className="pn-branch">
             <i />
             <i />
@@ -46,23 +57,23 @@ export default function SurveyScene({
         </div>
         <section
           className="pn-sheet pn-sheet-front"
-          aria-label="پیش‌نمایش تعاملی پرسشنامه"
+          aria-label={t("scene.aria")}
         >
           <div className="pn-demo-top">
-            <span>پیش‌نمایش تعاملی</span>
-            <span>۱ / ۳</span>
+            <span>{t("scene.preview")}</span>
+            <span>{t("scene.step")}</span>
           </div>
           <div className="pn-demo-progress">
             <i />
           </div>
           <h3>
-            صدای شما،
+            {t("scene.title")}
             <br />
-            شروع یک تغییر.
+            {t("scene.titleAccent")}
           </h3>
-          <p>تجربهٔ امروزتان چطور بود؟</p>
+          <p>{t("scene.question")}</p>
           <div className="pn-demo-choices">
-            {["معمولی", "خوب", "عالی"].map((label, i) => (
+            {choices.map((label, i) => (
               <button
                 key={label}
                 onClick={() => setAnswer(i)}
@@ -77,8 +88,8 @@ export default function SurveyScene({
           <div className="pn-demo-bottom">
             <span aria-live="polite">
               {answer === null
-                ? "یک گزینه را امتحان کنید"
-                : `انتخاب شما: ${["معمولی", "خوب", "عالی"][answer]}`}
+                ? t("scene.try")
+                : t("scene.selected", { answer: choices[answer] })}
             </span>
             <svg
               width="24"
@@ -101,7 +112,17 @@ export default function SurveyScene({
           <div />
         </div>
       </div>
-      <p className="pn-scene-caption">نمونهٔ نمایشی · پاسخ شما ذخیره نمی‌شود</p>
+      <div className="pn-scene-controls">
+        <p className="pn-scene-caption">{t("scene.caption")}</p>
+        <button
+          type="button"
+          className="pn-motion-toggle"
+          onClick={() => setPaused(!paused)}
+          aria-pressed={paused}
+        >
+          {paused ? t("scene.play") : t("scene.pause")}
+        </button>
+      </div>
     </div>
   );
 }
