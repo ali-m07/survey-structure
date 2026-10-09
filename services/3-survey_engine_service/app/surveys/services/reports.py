@@ -72,7 +72,7 @@ def export(survey,params):
             nonlocal y,page
             if y<55:
                 footer();pdf.showPage();page+=1;y=780
-            prepared=visual(text);x=550-width(text,size) if arabic(text) else 45
+            prepared=visual(text);x=550-width(text,size)
             for char in prepared:
                 family=font(char);pdf.setFont(family,size);pdf.drawString(x,y,char);x+=pdfmetrics.stringWidth(char,family,size)
             y-=size+9
@@ -93,7 +93,7 @@ def export(survey,params):
         paragraph('گزارش پاسخ‌های پرسشنامه',13)
         paragraph('تعداد پاسخ‌ها: '+str(len(rows)))
         from django.utils import timezone
-        paragraph('تاریخ گزارش: '+timezone.now().strftime('%Y-%m-%d'))
+        paragraph('تاریخ گزارش: '+timezone.now().strftime('%d / %m / %Y')+' (UTC)')
         y-=10
         report=analytics(survey,params)
         for item in report['questions']:
@@ -107,7 +107,7 @@ def export(survey,params):
             y-=8
         paragraph('جزئیات پاسخ‌ها',14)
         for submission in filtered(survey,params).prefetch_related('answers'):
-            paragraph('پاسخ شماره '+str(submission.id)+' | '+submission.submitted_at.strftime('%Y-%m-%d %H:%M'),12)
+            paragraph('پاسخ شماره '+str(submission.id)+' | '+submission.submitted_at.strftime('%d / %m / %Y')+' | '+submission.submitted_at.strftime('%H:%M')+' UTC',12)
             values={a.question_id:a.answer_value for a in submission.answers.all()}
             for q in qs:
                 if q.id in values: paragraph(q.question_text+': '+answer(values[q.id]))
