@@ -95,7 +95,7 @@ def export(survey,params):
         paragraph('گزارش پاسخ‌های پرسشنامه',13)
         paragraph('تعداد پاسخ‌ها: '+str(len(rows)))
         from django.utils import timezone
-        paragraph('تاریخ گزارش: '+timezone.now().strftime('%Y-%m-%d')+' (UTC)')
+        paragraph('تاریخ گزارش به وقت UTC: '+timezone.now().strftime('%Y-%m-%d'))
         y-=10
         report=analytics(survey,params)
         for item in report['questions']:
