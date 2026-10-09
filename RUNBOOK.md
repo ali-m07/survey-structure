@@ -92,3 +92,13 @@ docker compose --env-file deployment/.env.local up -d --build
 ```
 
 The `survey-platform` project name and existing volumes are preserved. Migrations run before the API; the worker and web application start after the API becomes healthy. For HTTPS, use the same file with `--profile tls`.
+
+## AI survey proposals
+
+The survey builder supports a goal, audience, language and desired question count. AI proposals are not saved until the author reviews them and chooses to add the selected questions. Applying a proposal appends new pages atomically and preserves existing questions. Only organization administrators/editors may generate/apply to a draft.
+
+Configure server-only `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_TIMEOUT` (up to 90 seconds), and `AI_API_KEY` when required. The Ollama endpoint uses its `/api/chat` API; an OpenAI-compatible base URL includes `/v1`. Never put provider credentials in `NEXT_PUBLIC_` variables.
+
+For the local Windows Docker setup, use `AI_PROVIDER=ollama` and `AI_BASE_URL=http://host.docker.internal:11434`. Download a model on the host and use its exact name in `AI_MODEL`. The local build uses `registry.ollama.com/library/qwen3:1.7b`; the alternate official registry is useful when the default registry cannot be reached. Model weights are not committed or included in the application image. Manual creation works if generation is unavailable.
+
+Provider configuration examples are in `deployment/.env.example`. Production must use a model service reachable from the API container. The model's output is a draft suggestion requiring human review, not a validated research instrument.

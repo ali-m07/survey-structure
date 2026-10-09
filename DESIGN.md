@@ -20,6 +20,11 @@ colors:
   workspace-muted: "#756570"
   workspace-divider: "#ded3d7"
   workspace-border: "#e2d8db"
+  builder-paper: "#f5f1eb"
+  builder-muted: "#766477"
+  builder-border: "#d9cbdc"
+  builder-action: "#70417e"
+  builder-selection: "#eee2f0"
 typography:
   display:
     fontFamily: "Vazirmatn, Tahoma, sans-serif"
@@ -81,6 +86,15 @@ components:
     textColor: "{colors.white}"
     rounded: "{rounded.action}"
     padding: "10px 19px"
+  builder-type:
+    backgroundColor: "{colors.white}"
+    rounded: "{rounded.field}"
+    padding: "10px 8px"
+    height: "48px"
+  builder-question:
+    backgroundColor: "{colors.white}"
+    rounded: "12px"
+    padding: "24px"
   field:
     backgroundColor: "{colors.field}"
     rounded: "{rounded.field}"
@@ -100,7 +114,7 @@ components:
 
 Cream paper, plum typography and layered lavender questionnaire sheets give survey work a tangible desk-like presence. The public surfaces combine generous editorial headings with working survey previews. Depth belongs to product geometry; copy, navigation and forms stay readable and direct.
 
-The authenticated workspace inherits warm paper and Vazirmatn but uses a slightly warmer plum palette, white outlined cards and flatter operational density. This is an observed variation, not a second invented identity. Evidence: `frontend/src/styles/globals.css`, `components/PublicSite.tsx`, `components/SurveyScene.tsx` and `pages/workspace.tsx`; direction context: `.impeccable/direction.md`. This record covers localized public pages, login, workspace, and the shared operational treatment of survey/report lists. Legacy tools retain local component variations.
+The authenticated workspace inherits warm paper and Vazirmatn but uses a slightly warmer plum palette, white outlined cards and flatter operational density. This is an observed variation, not a second invented identity. Evidence: `frontend/src/styles/globals.css`, `components/PublicSite.tsx`, `components/SurveyScene.tsx` and `pages/workspace.tsx`; direction context: `.impeccable/direction.md`. This record covers localized public pages, login, workspace, and the shared operational treatment of survey/report lists. The survey builder applies this identity in Operate mode: a persistent type toolbox and outline support one focused question editor. Evidence also includes `frontend/src/pages/surveys/[id]/edit.tsx`, `frontend/src/styles/Builder.module.css`, `frontend/src/components/GoalSurveyComposer.tsx` and its module stylesheet; surface scope is `.impeccable/surfaces/survey-builder.md`. Other legacy tools retain local component variations.
 
 **Key Characteristics:**
 
@@ -109,6 +123,7 @@ The authenticated workspace inherits warm paper and Vazirmatn but uses a slightl
 - Spacious paired sections and mobile stacking.
 - Continuously animated, interactive and explicitly labeled demonstration sheets.
 - Flat operational cards with visible keyboard focus.
+- A visible SVG type toolbox, selected outline and focused question editor.
 
 ## Colors
 
@@ -129,6 +144,7 @@ The palette uses one plum family against warm paper; lavender establishes depth 
 - **Divider:** quiet section and list boundaries.
 - **White / Field Cream:** reversed text, operational cards and login fields.
 - **Workspace Paper, Ink, Muted, Divider and Border:** the shipped workspace's warmer operational variation.
+- **Builder Paper, Muted, Border, Action and Selection:** cream canvas, readable supporting text, thin field boundaries, plum creation actions and lavender outline selection. The composer retains a local cream/plum variation.
 
 ### Named Rules
 
@@ -149,6 +165,8 @@ The palette uses one plum family against warm paper; lavender establishes depth 
 - **Body:** public text commonly uses (14–17px); long introduction paragraphs use leading (2–2.2). FAQ and about text limit length to (65ch).
 - **Label:** navigation uses (14px); form labels use (13px); supporting notes use (11–12px). Smaller sheet metadata is local preview detail, not a global text minimum.
 
+Builder headings use (28px), reducing to (23px) on mobile; toolbox headings use (17px), helper and editor metadata (13px), and type labels (12px), reducing to (11px) on mobile. These compact labels accompany distinct SVG icons; they are operational roles rather than display typography.
+
 ### Named Rules
 
 **The Shared Voice Rule.** Keep Vazirmatn throughout public, login and workspace surfaces; adapt heading size and leading to the locale while expressing hierarchy with scale and weight.
@@ -162,6 +180,8 @@ At (1100px), side gutters reduce to (30px), paired-section gaps contract and the
 At (761–1180px), public header spacing contracts for translated strings, with French navigation using a tighter gap. Logical margins position the account action and language selector in either direction. Login remains split above mobile and stacks below it; its mobile visual section reserves (700px) for the scene and readable controls.
 
 Workspace uses a maximum width (1152px), mobile horizontal padding (20px), desktop padding (48px), and a two-column destination grid at Tailwind's `md` breakpoint (768px). Destination padding grows from (28px) to (36px). The shared operational layer uses warm paper, a container cap (1244px), wrapping navigation, minimum field height (44px) and mobile inline padding (20px). Survey/report cards use a two-column grid at (768px), a (12px) radius and (24px) padding.
+
+Builder uses a centered cap (1440px), outer padding and column gap (24px), a sticky (280px) toolbox and a flexible editor. The twelve type buttons form two columns, while the outline uses wrapping text and logical indentation. At (900px), the toolbox narrows to (220px) and types use one column. At (650px), outer and editor padding become (16px), the layout stacks, the toolbox becomes static and types form three columns with centered icon-above-label content. Mobile question selection scrolls the focused editor into view, respecting reduced motion. The goal composer spans both columns; at (600px), its padding contracts and the primary action fills the available width. The same structure follows locale RTL/LTR.
 
 ## Elevation & Depth
 
@@ -207,6 +227,14 @@ Native details/summary rows use an authored inline SVG cross that rotates (45deg
 
 Listings display eight items per page, with localized previous/next controls, a polite live page count and disabled boundary controls. Survey filtering resets pagination and uses locale-aware case matching. Pagination navigation wraps at narrow widths.
 
+### Survey Builder
+
+Twelve labeled question-type buttons use authored inline SVG icons, field corners, thin borders and a minimum height (48px). Hover changes the lavender fill and border over (150ms); active press strengthens the fill. Outline selection uses lavender and plum, while the focused editor uses a stronger border and near-white fill without shadow. Keyboard focus uses a (3px) outline with (3px) offset. Question fields keep field corners and thin borders; secondary actions have a quiet lavender fill. Disabled actions reduce opacity.
+
+Survey settings use native details/summary, initially closed. Only the active question is rendered for editing; its page remains selected in the outline. Secondary validation and logic settings use a tonal details container; matrix configuration is initially open for matrix questions. This focused composition is specific to the builder, not a required layout for every operational surface.
+
+The goal composer is a separate native disclosure, initially closed. Its cream container has a thin warm border and softly rounded corners; fields and proposal rows share (12px) corners. Generation reveals an unsaved review with expandable question rows, inclusion controls and a selected count. Explicit apply commits the selected proposal; existing questions remain intact. Manual types stay available when AI generation fails. Button focus uses a plum outline; field focus shifts the border and adds a soft ring. The source contains unused eyebrow and decorative mark styles; they are not a reusable pattern.
+
 ### Interactive Questionnaire Sheets
 
 The scene repeats across home, product and login. Decorative back layers are hidden from assistive technology; the front sheet remains real HTML with keyboard-operable answer buttons, `aria-pressed` selection and a polite live response. Selected choices reverse to plum and white. The visible caption identifies the scene as a demonstration whose answers are not saved.
@@ -226,4 +254,4 @@ The scene repeats across home, product and login. Decorative back layers are hid
 - **Don't** substitute generic elevated cards for every open editorial section.
 - **Don't** remove the visible demonstration label when reusing the sample scene.
 
-Not canonized: one-off preview colors, tiny decorative metadata, superseded arrival motion and local placeholder corrections are not durable system tokens. The removed hard offset about shadow and replaced FAQ glyph are not inherited rules; the shipped soft cast shadow and authored SVG belong to their respective components.
+Not canonized: unused composer eyebrow/mark styles are not a shipped pattern; the eyebrow device must not become a house style. Local composer tint and focus variations remain component details rather than a competing palette. One-off preview colors, tiny decorative metadata, superseded arrival motion and local placeholder corrections are not durable system tokens. The removed hard offset about shadow and replaced FAQ glyph are not inherited rules; the shipped soft cast shadow and authored SVG belong to their respective components.

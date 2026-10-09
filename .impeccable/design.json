@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-09T10:59:52.224254+00:00",
+  "generatedAt": "2026-10-09T12:00:42.444887+00:00",
   "title": "Design System: Porsnama",
   "extensions": {
     "colorMeta": {
@@ -255,6 +255,76 @@
           "oklch(87% 0.018 342.0)",
           "oklch(95% 0.018 342.0)"
         ]
+      },
+      "builder-paper": {
+        "role": "neutral",
+        "displayName": "Builder Paper",
+        "tonalRamp": [
+          "oklch(15% 0.007 75)",
+          "oklch(27% 0.007 75)",
+          "oklch(39% 0.007 75)",
+          "oklch(51% 0.007 75)",
+          "oklch(63% 0.007 75)",
+          "oklch(75% 0.007 75)",
+          "oklch(87% 0.007 75)",
+          "oklch(95% 0.007 75)"
+        ]
+      },
+      "builder-muted": {
+        "role": "neutral",
+        "displayName": "Builder Muted",
+        "tonalRamp": [
+          "oklch(15% 0.03 320)",
+          "oklch(27% 0.03 320)",
+          "oklch(39% 0.03 320)",
+          "oklch(51% 0.03 320)",
+          "oklch(63% 0.03 320)",
+          "oklch(75% 0.03 320)",
+          "oklch(87% 0.03 320)",
+          "oklch(95% 0.03 320)"
+        ]
+      },
+      "builder-border": {
+        "role": "neutral",
+        "displayName": "Builder Border",
+        "tonalRamp": [
+          "oklch(15% 0.025 320)",
+          "oklch(27% 0.025 320)",
+          "oklch(39% 0.025 320)",
+          "oklch(51% 0.025 320)",
+          "oklch(63% 0.025 320)",
+          "oklch(75% 0.025 320)",
+          "oklch(87% 0.025 320)",
+          "oklch(95% 0.025 320)"
+        ]
+      },
+      "builder-action": {
+        "role": "primary",
+        "displayName": "Builder Action",
+        "tonalRamp": [
+          "oklch(15% 0.09 315)",
+          "oklch(27% 0.09 315)",
+          "oklch(39% 0.09 315)",
+          "oklch(51% 0.09 315)",
+          "oklch(63% 0.09 315)",
+          "oklch(75% 0.09 315)",
+          "oklch(87% 0.09 315)",
+          "oklch(95% 0.09 315)"
+        ]
+      },
+      "builder-selection": {
+        "role": "neutral",
+        "displayName": "Builder Selection",
+        "tonalRamp": [
+          "oklch(15% 0.035 315)",
+          "oklch(27% 0.035 315)",
+          "oklch(39% 0.035 315)",
+          "oklch(51% 0.035 315)",
+          "oklch(63% 0.035 315)",
+          "oklch(75% 0.035 315)",
+          "oklch(87% 0.035 315)",
+          "oklch(95% 0.035 315)"
+        ]
       }
     },
     "typographyMeta": {
@@ -357,6 +427,18 @@
       {
         "name": "localized-header-tablet",
         "value": "761px–1180px"
+      },
+      {
+        "name": "builder-tablet",
+        "value": "900px"
+      },
+      {
+        "name": "builder-mobile",
+        "value": "650px"
+      },
+      {
+        "name": "composer-mobile",
+        "value": "600px"
       }
     ]
   },
@@ -423,17 +505,26 @@
       "description": "Persistent native select for three locale routes, shown with its authored globe icon.",
       "html": "<label class=\"ds-language\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Z\" stroke=\"currentColor\" stroke-width=\"1.5\"/></svg><select aria-label=\"Language\"><option lang=\"fa\">فارسی</option><option lang=\"en\">English</option><option lang=\"fr\">Français</option></select></label>",
       "css": ".ds-language{display:inline-flex;align-items:center;gap:6px;color:#663877;font-family:Vazirmatn,Tahoma,sans-serif;font-size:12px;flex-shrink:0}.ds-language select{background:transparent;border:0;padding:9px 5px;min-height:42px;max-width:108px;cursor:pointer;font-family:inherit;color:inherit}.ds-language select:focus-visible{outline:3px solid #9159aa;outline-offset:5px}"
+    },
+    {
+      "name": "Builder Question Type",
+      "kind": "button",
+      "refersTo": "builder-type",
+      "description": "Labeled SVG tool for manual question creation.",
+      "html": "<button class=\"ds-builder-type\"><svg width=\"21\" height=\"21\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" aria-hidden=\"true\"><path d=\"M5 6h14M5 12h14M5 18h9\"/></svg><span>Text</span></button>",
+      "css": ".ds-builder-type{display:flex;align-items:center;gap:8px;padding:10px 8px;text-align:start;border:1px solid #e7dfe7;border-radius:8px;font-family:Vazirmatn,Tahoma,sans-serif;font-size:12px;min-height:48px;background:white;color:#322039;transition:background .15s,border-color .15s}.ds-builder-type svg{color:#734681;flex:none}.ds-builder-type:hover{background:#f4eaf6;border-color:#9e6bac}.ds-builder-type:active{background:#e6d6ec}.ds-builder-type:focus-visible{outline:3px solid #b080bd;outline-offset:3px}"
     }
   ],
   "narrative": {
     "northStar": "The Dimensional Research Desk",
-    "overview": "Cream paper, plum typography and layered lavender questionnaire sheets give survey work a tangible desk-like presence. The public surfaces combine generous editorial headings with working survey previews. Depth belongs to product geometry; copy, navigation and forms stay readable and direct.\n\nThe authenticated workspace inherits warm paper and Vazirmatn but uses a slightly warmer plum palette, white outlined cards and flatter operational density. This is an observed variation, not a second invented identity. Evidence: `frontend/src/styles/globals.css`, `components/PublicSite.tsx`, `components/SurveyScene.tsx` and `pages/workspace.tsx`; direction context: `.impeccable/direction.md`. This record covers localized public pages, login, workspace, and the shared operational treatment of survey/report lists. Legacy tools retain local component variations.",
+    "overview": "Cream paper, plum typography and layered lavender questionnaire sheets give survey work a tangible desk-like presence. The public surfaces combine generous editorial headings with working survey previews. Depth belongs to product geometry; copy, navigation and forms stay readable and direct.\n\nThe authenticated workspace inherits warm paper and Vazirmatn but uses a slightly warmer plum palette, white outlined cards and flatter operational density. This is an observed variation, not a second invented identity. Evidence: `frontend/src/styles/globals.css`, `components/PublicSite.tsx`, `components/SurveyScene.tsx` and `pages/workspace.tsx`; direction context: `.impeccable/direction.md`. This record covers localized public pages, login, workspace, and the shared operational treatment of survey/report lists. The survey builder applies this identity in Operate mode: a persistent type toolbox and outline support one focused question editor. Evidence also includes `frontend/src/pages/surveys/[id]/edit.tsx`, `frontend/src/styles/Builder.module.css`, `frontend/src/components/GoalSurveyComposer.tsx` and its module stylesheet; surface scope is `.impeccable/surfaces/survey-builder.md`. Other legacy tools retain local component variations.",
     "keyCharacteristics": [
       "Persian RTL and English/French LTR with localized interface copy.",
       "Cream and plum with lavender product depth.",
       "Spacious paired sections and mobile stacking.",
       "Continuously animated, interactive and explicitly labeled demonstration sheets.",
-      "Flat operational cards with visible keyboard focus."
+      "Flat operational cards with visible keyboard focus.",
+      "A visible SVG type toolbox, selected outline and focused question editor."
     ],
     "rules": [
       {
