@@ -1,10 +1,12 @@
+import BulkQuestionImporter from "../../../components/BulkQuestionImporter";
+import QuestionAnswerPreview from "../../../components/QuestionAnswerPreview";
 import GoalSurveyComposer from "../../../components/GoalSurveyComposer";
 import Head from "next/head";
 import LanguageSwitcher from "../../../components/LanguageSwitcher";
 import styles from "../../../styles/Builder.module.css";
 import { useLocale } from "../../../i18n/LocaleProvider";
 import { useTranslation } from "react-i18next";
-import { useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { apiClient, SURVEY_API } from "../../../services/api";
@@ -14,6 +16,7 @@ import { SurveyRunner } from "../../../components/SurveyRunner";
 import { registerSave, savePendingFields } from "../../../services/autosave";
 export default function Builder() {
   const { t } = useTranslation("survey");
+  const { t: extra } = useTranslation("builderExtras");
   const { direction, locale } = useLocale();
   const router = useRouter();
   const { query } = router;
@@ -113,6 +116,7 @@ export default function Builder() {
     apiClient.post(`${SURVEY_API}/questions/`, {
       section,
       question_text: q.question_text,
+      question_html: q.question_html || "",
       question_type: q.question_type,
       is_required: q.is_required,
       options: q.options,
@@ -152,7 +156,11 @@ export default function Builder() {
     });
   return (
     <main dir={direction} className={styles.builder}>
-      <Head><title>{t("builder")} | {survey.title}</title></Head>
+      <Head>
+        <title>
+          {t("builder")} | {survey.title}
+        </title>
+      </Head>
       <div className={styles.container}>
         <nav className="flex gap-4">
           <LanguageSwitcher />
@@ -240,6 +248,26 @@ export default function Builder() {
                   setSelectedQuestion(section?.questions[0]?.id);
                 }}
               />
+              <BulkQuestionImporter
+                surveyId={survey.id}
+                sectionId={activeSection?.id}
+                disabled={busy || locked}
+                onApplied={(next) => {
+                  const previousIds = new Set(
+                    survey.sections.flatMap((s) =>
+                      s.questions.map((q) => q.id),
+                    ),
+                  );
+                  setSurvey(next);
+                  const imported = next.sections
+                    .flatMap((s) => s.questions)
+                    .find((q) => !previousIds.has(q.id));
+                  if (imported) {
+                    setSelectedSection(imported.section);
+                    setSelectedQuestion(imported.id);
+                  }
+                }}
+              />
             </div>
             <aside className={styles.toolbox}>
               <h2>{t("studio.addType")}</h2>
@@ -252,43 +280,49 @@ export default function Builder() {
                   </button>
                 ))}
               </div>
-              <h2>{t("studio.outline")}</h2>
-              {!survey.sections.length && <p>{t("studio.outlineEmpty")}</p>}
-              {survey.sections.map((section, index) => (
-                <div key={section.id} className={styles.outline}>
-                  <button
-                    className={
-                      activeSection?.id === section.id ? styles.active : ""
-                    }
-                    onClick={() =>
-                      action(async () => {
-                        setSelectedSection(section.id);
-                        setSelectedQuestion(section.questions[0]?.id);
-                      })
-                    }
-                  >
-                    {index + 1}. {section.title || t("newSection")}
-                  </button>
-                  {section.questions.map((q, index) => (
+              <OutlineDisclosure
+                activeId={activeQuestion?.id}
+                label={activeQuestion?.question_text || t("studio.outline")}
+                count={survey.sections.flatMap((s) => s.questions).length}
+              >
+                <h2>{t("studio.outline")}</h2>
+                {!survey.sections.length && <p>{t("studio.outlineEmpty")}</p>}
+                {survey.sections.map((section, index) => (
+                  <div key={section.id} className={styles.outline}>
                     <button
-                      key={q.id}
                       className={
-                        activeQuestion?.id === q.id ? styles.active : ""
+                        activeSection?.id === section.id ? styles.active : ""
                       }
                       onClick={() =>
                         action(async () => {
                           setSelectedSection(section.id);
-                          setSelectedQuestion(q.id);
+                          setSelectedQuestion(section.questions[0]?.id);
                         })
                       }
                     >
-                      <span>{index + 1}</span>
-                      {q.question_text || t("studio.untitledQuestion")}
-                      <small>{t(`type_${q.question_type}`)}</small>
+                      {index + 1}. {section.title || t("newSection")}
                     </button>
-                  ))}
-                </div>
-              ))}
+                    {section.questions.map((q, index) => (
+                      <button
+                        key={q.id}
+                        className={
+                          activeQuestion?.id === q.id ? styles.active : ""
+                        }
+                        onClick={() =>
+                          action(async () => {
+                            setSelectedSection(section.id);
+                            setSelectedQuestion(q.id);
+                          })
+                        }
+                      >
+                        <span>{index + 1}</span>
+                        {q.question_text || t("studio.untitledQuestion")}
+                        <small>{t(`type_${q.question_type}`)}</small>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </OutlineDisclosure>
             </aside>
             <div className={styles.canvas}>
               <details className={styles.settings}>
@@ -657,6 +691,16 @@ export default function Builder() {
                                   questionUpdate(q, { question_text })
                                 }
                               />
+                              <details className={styles.richEditor}>
+                                <summary>{extra("htmlTitle")}</summary>
+                                <p>{extra("htmlHint")}</p>
+                                <HtmlQuestionEditor
+                                  question={q}
+                                  save={(question_html) =>
+                                    questionUpdate(q, { question_html })
+                                  }
+                                />
+                              </details>
                               <label>
                                 {t("type")}{" "}
                                 <select
@@ -707,7 +751,14 @@ export default function Builder() {
                                   }
                                 />
                               )}
-                              <details open={q.question_type === "matrix"}>
+                              <section className={styles.answerPreview}>
+                                <h3>{extra("answerPreview")}</h3>
+                                <QuestionAnswerPreview
+                                  key={`${q.id}-${q.question_type}`}
+                                  question={q}
+                                />
+                              </section>
+                              <details open className={styles.logicEditor}>
                                 <summary>
                                   {q.question_type === "matrix"
                                     ? t("studio.matrixSettings")
@@ -973,7 +1024,9 @@ function conditionDefault(question?: Question) {
   return question?.question_type === "boolean"
     ? true
     : question && ["number", "rating", "nps"].includes(question.question_type)
-      ? 0
+      ? question.question_type === "rating"
+        ? (question.validation_rules?.min ?? 1)
+        : 0
       : question?.options?.[0] || "";
 }
 function localDateTime(value: string) {
@@ -992,6 +1045,7 @@ function RuleEditor({
   save: (rules: any) => Promise<void>;
 }) {
   const { t } = useTranslation("survey");
+  const { t: extra } = useTranslation("builderExtras");
   const [rules, setRules] = useState(question.validation_rules || {});
   const [matrixRows, setMatrixRows] = useState(
     (question.validation_rules?.rows || []).join("\n"),
@@ -1000,10 +1054,29 @@ function RuleEditor({
     (question.validation_rules?.columns || []).join("\n"),
   );
   const [status, setStatus] = useState("");
+  const rulesRef = useRef(rules);
+  const rulesDirty = useRef(false);
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  const sequence = useRef(Promise.resolve());
+  const flush = () => {
+    const snapshot = structuredClone(rulesRef.current);
+    sequence.current = sequence.current
+      .catch(() => {})
+      .then(async () => {
+        if (!rulesDirty.current) return;
+        await saveRef.current(snapshot);
+        if (JSON.stringify(snapshot) === JSON.stringify(rulesRef.current))
+          rulesDirty.current = false;
+        setStatus(t("saved"));
+      });
+    return sequence.current;
+  };
+  useEffect(() => registerSave(flush), []);
   const index = questions.findIndex((q) => q.id === question.id);
   const earlier = questions.slice(0, index);
   const later = questions.slice(index + 1);
-  const bounds = ["number", "rating", "nps"].includes(question.question_type)
+  const bounds = ["number", "rating"].includes(question.question_type)
     ? [
         ["min", t("min")],
         ["max", t("max")],
@@ -1019,8 +1092,16 @@ function RuleEditor({
             ["max_choices", t("maxChoices")],
           ]
         : [];
-  const update = (key: string, value: any) =>
-    setRules((current) => ({ ...current, [key]: value }));
+  const update = (key: string, value: any) => {
+    const next = { ...rulesRef.current, [key]: value };
+    rulesRef.current = next;
+    rulesDirty.current = true;
+    setRules(next);
+    setStatus(t("unsaved"));
+  };
+  const eligible = earlier.filter(
+    (q) => !["matrix", "ranking"].includes(q.question_type),
+  );
   const source = earlier.find((q) => q.id === rules.display_if?.question);
   const numeric =
     source && ["number", "rating", "nps"].includes(source.question_type);
@@ -1042,6 +1123,7 @@ function RuleEditor({
           : question.options || [];
   return (
     <div className="space-y-4 pt-3">
+      {question.question_type === "nps" && <p>{extra("npsFixed")}</p>}
       {bounds.map(([key, label]) => (
         <label key={key} className="block">
           {label}
@@ -1080,10 +1162,15 @@ function RuleEditor({
           </label>
         ))}
       <div className="border p-3 rounded space-y-2">
+        <h3>{extra("conditionTitle")}</h3>
+        <p>
+          {eligible.length ? extra("conditionHint") : extra("firstQuestion")}
+        </p>
         <label className="block">
           {t("conditional")}
           <select
             className="border p-2 block w-full"
+            disabled={!eligible.length}
             value={rules.display_if?.question || ""}
             onChange={(e) =>
               update(
@@ -1091,7 +1178,11 @@ function RuleEditor({
                 e.target.value
                   ? {
                       question: Number(e.target.value),
-                      operator: "equals",
+                      operator:
+                        earlier.find((q) => q.id === Number(e.target.value))
+                          ?.question_type === "multiple_choice"
+                          ? "contains"
+                          : "equals",
                       value: conditionDefault(
                         earlier.find((q) => q.id === Number(e.target.value)),
                       ),
@@ -1101,7 +1192,7 @@ function RuleEditor({
             }
           >
             <option value="">{t("always")}</option>
-            {earlier.map((q) => (
+            {eligible.map((q) => (
               <option key={q.id} value={q.id}>
                 {q.question_text}
               </option>
@@ -1123,11 +1214,21 @@ function RuleEditor({
                 }
               >
                 {[
-                  ["equals", t("equals")],
-                  ["not_equals", t("notEquals")],
-                  ["contains", t("contains")],
-                  ["greater_than", t("greater")],
-                  ["less_than", t("less")],
+                  ...(source?.question_type === "multiple_choice"
+                    ? [["contains", t("contains")]]
+                    : [
+                        ["equals", t("equals")],
+                        ["not_equals", t("notEquals")],
+                      ]),
+                  ...(["text", "email"].includes(source?.question_type || "")
+                    ? [["contains", t("contains")]]
+                    : []),
+                  ...(numeric
+                    ? [
+                        ["greater_than", t("greater")],
+                        ["less_than", t("less")],
+                      ]
+                    : []),
                   ["answered", t("answered")],
                 ].map(([value, label]) => (
                   <option key={value} value={value}>
@@ -1152,6 +1253,46 @@ function RuleEditor({
                   >
                     <option value="true">{t("yes")}</option>
                     <option value="false">{t("no")}</option>
+                  </select>
+                </label>
+              ) : source &&
+                (source.options?.length ||
+                  ["nps", "rating"].includes(source.question_type)) ? (
+                <label className="block">
+                  {t("value")}
+                  <select
+                    value={String(rules.display_if.value ?? "")}
+                    onChange={(e) => {
+                      const value = e.currentTarget.value;
+                      update("display_if", {
+                        ...rules.display_if,
+                        value: numeric ? Number(value) : value,
+                      });
+                    }}
+                  >
+                    {(source.question_type === "nps"
+                      ? Array.from({ length: 11 }, (_, i) => i)
+                      : source.question_type === "rating"
+                        ? Array.from(
+                            {
+                              length: Math.min(
+                                101,
+                                Math.max(
+                                  1,
+                                  (source.validation_rules?.max ?? 5) -
+                                    (source.validation_rules?.min ?? 1) +
+                                    1,
+                                ),
+                              ),
+                            },
+                            (_, i) => i + (source.validation_rules?.min ?? 1),
+                          )
+                        : source.options
+                    ).map((v) => (
+                      <option key={String(v)} value={String(v)}>
+                        {String(v)}
+                      </option>
+                    ))}
                   </select>
                 </label>
               ) : (
@@ -1183,46 +1324,49 @@ function RuleEditor({
       </div>
       {["single_choice", "scale", "rating", "nps", "boolean"].includes(
         question.question_type,
-      ) && (
-        <div className="border p-3 rounded space-y-2">
-          <h3 className="font-semibold">{t("branch")}</h3>
-          {triggerOptions.map((trigger) => (
-            <label key={trigger} className="block">
-              {t("answerTrigger", {
-                answer:
-                  trigger === "true"
-                    ? t("yes")
-                    : trigger === "false"
-                      ? t("no")
-                      : trigger,
-              })}
-              <select
-                className="border p-2 block w-full"
-                value={rules.jump_to?.[trigger] || ""}
-                onChange={(e) => {
-                  const branches = { ...rules.jump_to };
-                  if (e.target.value)
-                    branches[trigger] = Number(e.target.value);
-                  else delete branches[trigger];
-                  update("jump_to", branches);
-                }}
-              >
-                <option value="">{t("normal")}</option>
-                {later.map((q) => (
-                  <option key={q.id} value={q.id}>
-                    {q.question_text}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
-        </div>
-      )}
+      ) &&
+        (later.length ? (
+          <details className="border p-3 rounded space-y-2">
+            <summary className="font-semibold">{t("branch")}</summary>
+            {triggerOptions.map((trigger) => (
+              <label key={trigger} className="block">
+                {t("answerTrigger", {
+                  answer:
+                    trigger === "true"
+                      ? t("yes")
+                      : trigger === "false"
+                        ? t("no")
+                        : trigger,
+                })}
+                <select
+                  className="border p-2 block w-full"
+                  value={rules.jump_to?.[trigger] || ""}
+                  onChange={(e) => {
+                    const branches = { ...rules.jump_to };
+                    if (e.target.value)
+                      branches[trigger] = Number(e.target.value);
+                    else delete branches[trigger];
+                    update("jump_to", branches);
+                  }}
+                >
+                  <option value="">{t("normal")}</option>
+                  {later.map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.question_text}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </details>
+        ) : (
+          <p className={styles.branchHint}>{extra("laterQuestionNeeded")}</p>
+        ))}
       <button
         className="border p-2 rounded"
         onClick={async () => {
           try {
-            await save(rules);
+            await flush();
             setStatus(t("saved"));
           } catch (e) {
             setStatus(String(e));
@@ -1233,5 +1377,98 @@ function RuleEditor({
       </button>
       <p role="status">{status}</p>
     </div>
+  );
+}
+
+function HtmlQuestionEditor({
+  question,
+  save,
+}: {
+  question: Question;
+  save: (html: string) => Promise<void>;
+}) {
+  const { t } = useTranslation("builderExtras");
+  const [version, setVersion] = useState(0);
+  const [preset, setPreset] = useState<string>();
+  const [error, setError] = useState("");
+  const current = useRef(question);
+  current.current = question;
+  const apply = async (tag: string) => {
+    await savePendingFields();
+    const savedQuestion = await apiClient.get<Question>(
+      `${SURVEY_API}/questions/${question.id}/`,
+    );
+    const escaped = savedQuestion.question_text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const html = `<${tag}>${savedQuestion.question_html || escaped}</${tag}>`;
+    await save(html);
+    setPreset(html);
+    setVersion((v) => v + 1);
+  };
+  return (
+    <div>
+      <div className={styles.formatButtons}>
+        {["strong", "em", "h3", "p"].map((tag) => (
+          <button
+            type="button"
+            key={tag}
+            onClick={() => {
+              setError("");
+              apply(tag).catch((e) => setError(String(e)));
+            }}
+          >
+            {t(`format_${tag}`)}
+          </button>
+        ))}
+      </div>
+      <AutoField
+        key={`${question.id}-${version}`}
+        label={t("htmlSource")}
+        multiline
+        value={question.question_html ?? preset ?? ""}
+        onSave={save}
+      />
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
+}
+
+function OutlineDisclosure({
+  activeId,
+  label,
+  count,
+  children,
+}: {
+  activeId?: number;
+  label: string;
+  count: number;
+  children: ReactNode;
+}) {
+  const { t } = useTranslation("builderExtras");
+  const [open, setOpen] = useState(true);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 650px)");
+    const apply = () => setOpen(!media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 650px)").matches) setOpen(false);
+  }, [activeId]);
+  return (
+    <details
+      className={styles.outlineDisclosure}
+      open={open}
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+    >
+      <summary>
+        <span>{label}</span>
+        <small>{t("outlineCount", { count })}</small>
+      </summary>
+      {children}
+    </details>
   );
 }

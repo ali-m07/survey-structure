@@ -1,0 +1,70 @@
+.importer {
+  border: 1px solid #ded1dc;
+  border-radius: 14px;
+  padding: 20px;
+  background: #fffdf8;
+  margin-top: 16px;
+}
+.importer summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 40px;
+}
+.importer p {
+  color: #67576b;
+  line-height: 1.7;
+}
+.importer label {
+  display: block;
+  font-weight: 600;
+}
+.importer textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid #cbbecb;
+  border-radius: 10px;
+  padding: 12px;
+  margin-block: 8px;
+  resize: vertical;
+  font-weight: 400;
+}
+.importer pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f1edf2;
+  padding: 12px;
+  font-size: 12px;
+  direction: ltr;
+  text-align: left;
+}
+.importer button {
+  background: #633a69;
+  color: #fff;
+  border-radius: 8px;
+  padding: 12px 18px;
+  min-height: 44px;
+}
+.importer button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.review {
+  margin-block: 16px;
+}
+.review ol {
+  max-height: 320px;
+  overflow: auto;
+  padding-inline-start: 25px;
+}
+.review li {
+  padding: 8px;
+  border-bottom: 1px solid #e9e0e8;
+}
+.review small {
+  display: block;
+  color: #79677e;
+}
+.importer :focus-visible {
+  outline: 2px solid #80538c;
+  outline-offset: 3px;
+}

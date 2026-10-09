@@ -17,6 +17,9 @@ import frScene from "./locales/fr/scene.json";
 import faGenerator from "./locales/fa/generator.json";
 import enGenerator from "./locales/en/generator.json";
 import frGenerator from "./locales/fr/generator.json";
+import faExtras from "./locales/fa/builderExtras.json";
+import enExtras from "./locales/en/builderExtras.json";
+import frExtras from "./locales/fr/builderExtras.json";
 export type Locale = "fa" | "en" | "fr";
 export const languages: { code: Locale; label: string }[] = [
   { code: "fa", label: "فارسی" },
@@ -50,9 +53,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       fallbackLng: "fa",
       initAsync: false,
       resources: {
-        fa: { public: faPublic, app: faApp, survey: faSurvey, scene: faScene, generator: faGenerator },
-        en: { public: enPublic, app: enApp, survey: enSurvey, scene: enScene, generator: enGenerator },
-        fr: { public: frPublic, app: frApp, survey: frSurvey, scene: frScene, generator: frGenerator },
+        fa: { public: faPublic, app: faApp, survey: faSurvey, scene: faScene, generator: faGenerator, builderExtras: faExtras },
+        en: { public: enPublic, app: enApp, survey: enSurvey, scene: enScene, generator: enGenerator, builderExtras: enExtras },
+        fr: { public: frPublic, app: frApp, survey: frSurvey, scene: frScene, generator: frGenerator, builderExtras: frExtras },
       },
       defaultNS: "public",
       interpolation: { escapeValue: false },

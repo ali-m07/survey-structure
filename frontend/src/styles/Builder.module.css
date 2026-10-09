@@ -318,3 +318,80 @@
   grid-column: 1/-1;
   min-width: 0;
 }
+
+.answerPreview {
+  background: #faf5ec;
+  border: 1px solid #e5d6df;
+  border-radius: 12px;
+  padding: 20px;
+}
+.answerPreview h3 {
+  font-size: 14px;
+  color: #77597b;
+  margin-bottom: 12px;
+}
+.logicEditor,
+.richEditor {
+  border: 1px solid #d9cbd9;
+  padding: 16px;
+  border-radius: 10px;
+}
+.logicEditor summary,
+.richEditor summary {
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 32px;
+}
+.formatButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 12px;
+}
+.formatButtons button {
+  border: 1px solid #cdbccf;
+  padding: 8px 14px;
+  border-radius: 8px;
+  min-height: 40px;
+}
+.richEditor p {
+  line-height: 1.7;
+  color: #726175;
+}
+
+.outlineDisclosure > summary {
+  display: none;
+}
+.branchHint {
+  padding: 12px;
+  background: #faf5ec;
+  border-radius: 8px;
+  color: #726175;
+  line-height: 1.7;
+}
+@media (max-width: 650px) {
+  .outlineDisclosure > summary {
+    display: list-item;
+    cursor: pointer;
+    padding: 12px;
+    border: 1px solid #d9cbd9;
+    border-radius: 8px;
+    min-height: 44px;
+  }
+  .outlineDisclosure > summary span {
+    overflow-wrap: anywhere;
+    font-weight: 600;
+  }
+  .outlineDisclosure > summary small {
+    display: block;
+    margin-block-start: 4px;
+    color: #726175;
+  }
+  .outlineDisclosure[open] {
+    max-height: 400px;
+    overflow: auto;
+  }
+  .outlineDisclosure h2 {
+    margin-top: 16px;
+  }
+}
