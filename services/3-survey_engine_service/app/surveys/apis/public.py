@@ -30,7 +30,7 @@ def public_survey(request, pk):
     available(survey, request.query_params.get('token'))
     data = SurveySerializer(survey).data
     for key in ('tenant_id','created_by_id','participant_count','submission_count','blockchain_hash'): data.pop(key,None)
-    data['settings'] = {k:v for k,v in survey.settings.items() if k in ('language','allow_multiple','invitation_only','randomize_questions')}
+    data['settings'] = {k:v for k,v in survey.settings.items() if k in ('language','allow_multiple','invitation_only','randomize_questions','randomize_options')}
     return Response(data)
 
 class SubmissionThrottle(AnonRateThrottle):

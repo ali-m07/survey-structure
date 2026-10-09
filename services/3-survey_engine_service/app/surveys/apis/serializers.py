@@ -54,7 +54,7 @@ class SurveySerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         settings = attrs.get('settings', getattr(self.instance,'settings',{}))
         if not isinstance(settings,dict): raise serializers.ValidationError('Settings must be an object.')
-        for key in ('allow_multiple','invitation_only','randomize_questions'):
+        for key in ('allow_multiple','invitation_only','randomize_questions','randomize_options'):
             if key in settings and not isinstance(settings[key],bool): raise serializers.ValidationError('Boolean settings must be true or false.')
         start = attrs.get('starts_at',getattr(self.instance,'starts_at',None))
         end = attrs.get('ends_at',getattr(self.instance,'ends_at',None))

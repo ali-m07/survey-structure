@@ -120,3 +120,29 @@ class SurveySecurityTests(TestCase):
             self.assertIn('X-Survey-Signature',outbound.call_args.kwargs['headers'])
         self.auth()
         self.assertEqual(self.client.post(self.base+f'surveys/{self.survey.id}/webhooks/',{'url':'http://127.0.0.1/private'},format='json').status_code,400)
+
+    def test_legacy_audit_scope_backfill_and_history(self):
+        import importlib
+        from django.apps import apps
+        from app.surveys.models import AuditEvent
+        old=AuditEvent.objects.create(tenant_id='a',user=self.user,action='publish.survey',object_id=str(self.survey.id))
+        question=AuditEvent.objects.create(tenant_id='a',user=self.user,action='update.question',object_id=str(self.q.id))
+        unknown=AuditEvent.objects.create(tenant_id='a',user=self.user,action='delete.question',object_id='999999')
+        foreign=AuditEvent.objects.create(tenant_id='b',user=self.user,action='publish.survey',object_id=str(self.survey.id))
+        importlib.import_module('app.surveys.migrations.0006_backfill_audit_scope').backfill(apps,None)
+        old.refresh_from_db();question.refresh_from_db();unknown.refresh_from_db();foreign.refresh_from_db()
+        self.assertEqual(old.detail['survey_id'],self.survey.id)
+        self.assertEqual(question.detail['survey_id'],self.survey.id)
+        self.assertEqual(unknown.detail,{})
+        self.assertEqual(foreign.detail,{})
+        self.auth()
+        response=self.client.get(self.base+f'surveys/{self.survey.id}/history/')
+        self.assertEqual({item['id'] for item in response.data},{old.id,question.id})
+    def test_randomization_settings_public_contract(self):
+        self.auth()
+        url=self.base+f'surveys/{self.survey.id}/'
+        self.assertEqual(self.client.patch(url,{'settings':{'randomize_options':'yes'}},format='json').status_code,400)
+        self.assertEqual(self.client.patch(url,{'settings':{'randomize_options':True}},format='json').status_code,200)
+        self.survey.refresh_from_db();self.publish();self.client.force_authenticate(None)
+        response=self.client.get(self.base+f'public/surveys/{self.survey.id}/')
+        self.assertTrue(response.data['settings']['randomize_options'])
