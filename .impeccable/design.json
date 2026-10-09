@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-09T10:15:32.724907+00:00",
+  "generatedAt": "2026-10-09T10:59:52.224254+00:00",
   "title": "Design System: Porsnama",
   "extensions": {
     "colorMeta": {
@@ -273,6 +273,14 @@
       "label": {
         "displayName": "Label",
         "purpose": "Form and control labels."
+      },
+      "display-ltr": {
+        "displayName": "LTR Display",
+        "purpose": "English/French public hero headings."
+      },
+      "headline-ltr": {
+        "displayName": "LTR Headline",
+        "purpose": "English/French public section headings."
       }
     },
     "shadows": [
@@ -280,28 +288,53 @@
         "name": "dimensional-sheet",
         "value": "16px 24px 40px -18px #54365d66",
         "purpose": "Cast shadow for layered survey sheets."
+      },
+      {
+        "name": "operational-low",
+        "value": "0 8px 22px -16px #43264f66",
+        "purpose": "Shared operational card shadow where legacy shadow utilities are used."
+      },
+      {
+        "name": "about-cast",
+        "value": "12px 19px 20px #66387733",
+        "purpose": "Soft cast text shadow for layered about-brand letter geometry."
       }
     ],
     "motion": [
       {
-        "name": "scene-easing",
-        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Stage response and front-sheet arrival."
+        "name": "sheet-cycle",
+        "value": "7s cubic-bezier(0.45, 0, 0.25, 1) infinite",
+        "purpose": "Automatic questionnaire, logic and report sheet depth loop; pause/play and reduced-motion default pause."
+      },
+      {
+        "name": "orbit-cycle",
+        "value": "14s linear infinite",
+        "purpose": "Demonstration orbit rotation, governed by the same pause/play state."
       },
       {
         "name": "stage-response",
-        "value": "0.4s",
-        "purpose": "Bounded mouse tilt; disabled with reduced motion."
+        "value": "0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Bounded pointer tilt; removed for reduced motion."
       },
       {
-        "name": "sheet-arrival",
-        "value": "0.9s",
-        "purpose": "Front-sheet arrival; disabled with reduced motion."
+        "name": "answer-response",
+        "value": "0.15s",
+        "purpose": "Choice fill, text and pressed shadow response."
       },
       {
         "name": "button-response",
         "value": "0.2s",
-        "purpose": "Background change and lift; disabled with reduced motion."
+        "purpose": "Background change and lift; motion removed for reduced motion."
+      },
+      {
+        "name": "about-depth",
+        "value": "8s ease-in-out infinite",
+        "purpose": "About mark floating depth; removed for reduced motion."
+      },
+      {
+        "name": "faq-response",
+        "value": "0.18s ease",
+        "purpose": "Authored SVG open-state rotation; removed for reduced motion."
       }
     ],
     "breakpoints": [
@@ -320,6 +353,10 @@
       {
         "name": "public-wide",
         "value": "1500px"
+      },
+      {
+        "name": "localized-header-tablet",
+        "value": "761px–1180px"
       }
     ]
   },
@@ -362,7 +399,7 @@
       "refersTo": "",
       "description": "Public navigation with current-page emphasis.",
       "html": "<nav class=\"ds-nav\" dir=\"rtl\"><a href=\"#\" aria-current=\"page\">معرفی محصول</a><a href=\"#\">دربارهٔ ما</a></nav>",
-      "css": ".ds-nav{font-family:Vazirmatn,Tahoma,sans-serif;display:flex;gap:34px;font-size:14px}.ds-nav a{color:#322138;text-decoration:none}.ds-nav a:hover,.ds-nav a[aria-current=\"page\"]{color:#825299}.ds-nav a:focus-visible{outline:3px solid #9159aa;outline-offset:5px;}"
+      "css": ".ds-nav{font-family:Vazirmatn,Tahoma,sans-serif;display:flex;gap:25px;font-size:14px}.ds-nav a{color:#322138;text-decoration:none}.ds-nav a:hover,.ds-nav a[aria-current=\"page\"]{color:#825299}.ds-nav a:focus-visible{outline:3px solid #9159aa;outline-offset:5px;}"
     },
     {
       "name": "Question Type Tag",
@@ -379,16 +416,23 @@
       "description": "Flat destination card for available workspace tools.",
       "html": "<a class=\"ds-card\" href=\"#\" dir=\"rtl\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><path d=\"M19 12H5m6-6-6 6 6 6\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg><h2>پرسشنامه‌ها</h2><p>پرسشنامه‌های تیم و پاسخ‌ها را مشاهده کنید.</p></a>",
       "css": ".ds-card{font-family:Vazirmatn,Tahoma,sans-serif;display:block;background:white;border:1px solid #e2d8db;border-radius:24px;padding:28px;color:#432839;text-decoration:none;transition:background-color .15s}.ds-card>svg{display:block;margin-right:auto;color:#795384}.ds-card h2{font-size:24px;font-weight:700;margin:24px 0 12px}.ds-card p{color:#756570;line-height:28px;margin:0}.ds-card:hover{background:#f3e8ee}.ds-card:focus-visible{outline:2px solid #8b5672;outline-offset:2px}"
+    },
+    {
+      "name": "Language Switcher",
+      "kind": "nav",
+      "description": "Persistent native select for three locale routes, shown with its authored globe icon.",
+      "html": "<label class=\"ds-language\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Z\" stroke=\"currentColor\" stroke-width=\"1.5\"/></svg><select aria-label=\"Language\"><option lang=\"fa\">فارسی</option><option lang=\"en\">English</option><option lang=\"fr\">Français</option></select></label>",
+      "css": ".ds-language{display:inline-flex;align-items:center;gap:6px;color:#663877;font-family:Vazirmatn,Tahoma,sans-serif;font-size:12px;flex-shrink:0}.ds-language select{background:transparent;border:0;padding:9px 5px;min-height:42px;max-width:108px;cursor:pointer;font-family:inherit;color:inherit}.ds-language select:focus-visible{outline:3px solid #9159aa;outline-offset:5px}"
     }
   ],
   "narrative": {
     "northStar": "The Dimensional Research Desk",
-    "overview": "Cream paper, plum typography and layered lavender questionnaire sheets give Persian survey work a tangible desk-like presence. The public surfaces combine generous editorial headings with working survey previews. Depth belongs to product geometry; copy, navigation and forms stay readable and direct.\n\nThe authenticated workspace inherits warm paper and Vazirmatn but uses a slightly warmer plum palette, white outlined cards and flatter operational density. This is an observed variation, not a second invented identity. Evidence: `frontend/src/styles/globals.css`, `components/PublicSite.tsx`, `components/SurveyScene.tsx` and `pages/workspace.tsx`; direction context: `.impeccable/direction.md`. This record covers public pages, login and the workspace entry, not all legacy application screens.",
+    "overview": "Cream paper, plum typography and layered lavender questionnaire sheets give survey work a tangible desk-like presence. The public surfaces combine generous editorial headings with working survey previews. Depth belongs to product geometry; copy, navigation and forms stay readable and direct.\n\nThe authenticated workspace inherits warm paper and Vazirmatn but uses a slightly warmer plum palette, white outlined cards and flatter operational density. This is an observed variation, not a second invented identity. Evidence: `frontend/src/styles/globals.css`, `components/PublicSite.tsx`, `components/SurveyScene.tsx` and `pages/workspace.tsx`; direction context: `.impeccable/direction.md`. This record covers localized public pages, login, workspace, and the shared operational treatment of survey/report lists. Legacy tools retain local component variations.",
     "keyCharacteristics": [
-      "Persian typography and right-to-left reading order.",
+      "Persian RTL and English/French LTR with localized interface copy.",
       "Cream and plum with lavender product depth.",
       "Spacious paired sections and mobile stacking.",
-      "Interactive, explicitly labeled demonstration sheets.",
+      "Continuously animated, interactive and explicitly labeled demonstration sheets.",
       "Flat operational cards with visible keyboard focus."
     ],
     "rules": [
@@ -398,8 +442,8 @@
         "section": "colors"
       },
       {
-        "name": "The Single Persian Voice Rule",
-        "body": "Keep Vazirmatn throughout public, login and workspace surfaces; express hierarchy with scale, weight and leading.",
+        "name": "The Shared Voice Rule",
+        "body": "Keep Vazirmatn throughout public, login and workspace surfaces; adapt heading size and leading to the locale while expressing hierarchy with scale and weight.",
         "section": "typography"
       },
       {
@@ -409,9 +453,9 @@
       }
     ],
     "dos": [
-      "Do maintain Persian reading order and the Single Persian Voice Rule.",
+      "Do apply the active locale reading direction and the Shared Voice Rule.",
       "Do preserve the Plum Hierarchy Rule across editorial and operational surfaces.",
-      "Do keep demonstration controls usable with keyboard and reduced motion.",
+      "Do keep localized demonstration controls usable with keyboard, pause/play and reduced motion.",
       "Do use borders and tonal fills to organize flat workspace controls."
     ],
     "donts": [

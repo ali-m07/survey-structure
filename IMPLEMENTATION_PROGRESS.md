@@ -56,7 +56,7 @@ The local administrator username is `survey-admin`. Its randomly generated passw
 - File and audio questions are not offered in the interface, and the API rejects them.
 - Text analysis counts words; sentiment analysis and fabricated AI results are not offered.
 - Resume works in the same browser; unique public respondent identity cannot be guaranteed after browser storage is cleared. Individual invitations enforce completion controls.
-- Persian is available; not all interface text has been translated into English.
+- Interface copy is localized into Persian, English and French. User-authored survey content retains its original language.
 - Collaboration includes team roles and access; live concurrent editing through WebSocket is not offered.
 - The production server, domain, SMTP, and load checks in the actual environment have not yet been configured or completed.
 
@@ -82,3 +82,12 @@ The API now uses a two-stage build and the web app a three-stage build. `docker-
 - Built and started the updated web image successfully. Desktop (1440px) and mobile (390px) captures of all four public routes showed no horizontal overflow or page runtime errors. The illustrative preview interaction and actual administrator login to the workspace succeeded.
 - Isolated browser fixtures for viewer role rendering confirmed hidden team navigation, blocked direct editing/team routes, and a mobile workspace without overflow. These fixture checks validate browser behavior; they do not replace server permission tests. An unauthenticated workspace visit redirected to login.
 - Brand naming and product introduction were delegated by the user. No fabricated customers, team biographies, pricing or company history were added. External brand availability has not been verified.
+
+## Localization, layouts and continuous motion (2026-10-09)
+
+- Implemented i18next and react-i18next across public pages, authentication, workspace, survey editing and respondent chrome. Next.js locale routes support Persian, English and French, with server-rendered language/direction and a persistent language switcher.
+- Corrected the locale-aware API proxy; actual French login reaches the authenticated workspace.
+- Added search and eight-item pagination to survey and report lists, localized empty/loading/error states and responsive RTL/LTR layouts.
+- Added continuous 3D sheet depth movement, pause/play controls and reduced-motion defaults. Refined mobile composition and French text expansion; replaced the FAQ glyph with an authored SVG and removed the about mark's hard offset shadow.
+- Production Docker build completed successfully with 64 static outputs. Public review covered 24 locale/page/viewport combinations without horizontal overflow or runtime page errors. Sixteen authenticated English/French routes loaded successfully; autoplay, pause, locale persistence and reduced motion were checked in a browser.
+- Hardened Docker dependency installation with limited concurrent download connections and an explicit Next executable check. No new backend test results or external production deployment are claimed in this update.

@@ -64,3 +64,11 @@ The project now uses the brand **Porsnama / پرس‌نما**. Public routes are
 Successful login opens `/workspace`. Organization memberships returned by the server determine the active organization and role: administrators manage team access; administrators and editors can create and edit surveys; viewers have read access. The browser guards protected routes and hides actions that the current role cannot perform; existing API permissions remain authoritative. Organization switching is limited to the account's returned memberships. Accounts without memberships receive an access explanation. Public survey participation remains available without administrative login.
 
 Vazirmatn fonts are served locally; their SIL Open Font License is included under `frontend/public/fonts/OFL.txt`. No public registration or external identity provider is configured.
+
+## Three-language interface and motion
+
+Porsnama uses i18next and react-i18next with separate `public`, `app`, `survey`, and `scene` translation namespaces for Persian (`fa`), English (`en`), and French (`fr`). Next.js locale routes preserve the selected language across navigation and reloads; the language selector also stores a `NEXT_LOCALE` preference cookie. Persian uses RTL, while English and French use LTR. Public page metadata and document language are localized. Survey titles, authored questions, options, and responses remain original content.
+
+Public examples: `/fa`, `/en`, `/fr`. The shared language selector is available in public navigation, login, the workspace, and public survey chrome. The survey list supports text search and eight-item pagination; reports use real survey report destinations and eight-item pagination.
+
+The questionnaire sheets automatically move through a continuous seven-second depth cycle; the orbit rotates continuously. Pause/play is available, and reduced-motion preferences pause the default scene. Pointer tilt composes with the automatic animation. All language variants share adaptive layouts; fixed UI strings live in `frontend/src/i18n/locales/`.

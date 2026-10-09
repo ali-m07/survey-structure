@@ -19,3 +19,6 @@ User explicitly requests a complete public website, a product introduction, abou
 ## Evidence
 IMPLEMENTATION_PROGRESS.md and implemented API. Preview content must be labeled as a demonstration.
 
+
+## Localization and motion commitments
+The user requests a true i18n interface in Persian, English and French, appropriate reading direction and adaptive page layouts. Fixed UI and public copy are localized; authored survey content stays unchanged. The questionnaire-sheet demonstration must play a continuous depth animation by default, with pause/play and reduced-motion support. Survey and report listings support pagination.
