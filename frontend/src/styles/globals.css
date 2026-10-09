@@ -1713,3 +1713,13 @@ body {
     transition: none;
   }
 }
+
+/* Native choice controls retain their compact shape inside application forms. */
+.pn-app main input[type="checkbox"],
+.pn-app main input[type="radio"] {
+  min-height: 0;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  accent-color: #663877;
+}
