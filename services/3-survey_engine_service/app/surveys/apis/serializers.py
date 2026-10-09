@@ -48,6 +48,16 @@ class SectionSerializer(serializers.ModelSerializer):
 
 
 class SurveySerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        settings = attrs.get('settings', getattr(self.instance,'settings',{}))
+        if not isinstance(settings,dict): raise serializers.ValidationError('Settings must be an object.')
+        for key in ('allow_multiple','invitation_only','randomize_questions'):
+            if key in settings and not isinstance(settings[key],bool): raise serializers.ValidationError('Boolean settings must be true or false.')
+        start = attrs.get('starts_at',getattr(self.instance,'starts_at',None))
+        end = attrs.get('ends_at',getattr(self.instance,'ends_at',None))
+        if start and end and end <= start: raise serializers.ValidationError('End must follow start.')
+        return attrs
+
     sections = SectionSerializer(many=True, read_only=True)
     participant_count = serializers.IntegerField(source='participants.count', read_only=True)
     submission_count = serializers.IntegerField(source='submissions.count', read_only=True)

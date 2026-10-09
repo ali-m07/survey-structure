@@ -45,10 +45,10 @@ def validate_structure(survey):
         condition = rules.get('display_if')
         if condition:
             source = condition.get('question')
-            if source not in positions or positions[source] >= positions[q.id] or condition.get('operator') not in OPERATORS:
+            if not isinstance(source,int) or isinstance(source,bool) or source not in positions or positions[source] >= positions[q.id] or condition.get('operator') not in OPERATORS:
                 raise ValidationError('Display conditions must refer to an earlier question and supported operator.')
         for target in rules.get('jump_to', {}).values():
-            if target not in positions or positions[target] <= positions[q.id]:
+            if not isinstance(target,int) or isinstance(target,bool) or target not in positions or positions[target] <= positions[q.id]:
                 raise ValidationError('Branch targets must refer to a later question.')
     if survey.starts_at and survey.ends_at and survey.ends_at <= survey.starts_at:
         raise ValidationError('End date must be after start date.')

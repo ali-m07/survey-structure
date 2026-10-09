@@ -29,6 +29,7 @@ def public_survey(request, pk):
     available(survey, request.query_params.get('token'))
     data = SurveySerializer(survey).data
     for key in ('tenant_id','created_by_id','participant_count','submission_count','blockchain_hash'): data.pop(key,None)
+    data['settings'] = {k:v for k,v in survey.settings.items() if k in ('language','allow_multiple','invitation_only','randomize_questions')}
     return Response(data)
 
 @api_view(['POST'])
@@ -36,11 +37,14 @@ def public_survey(request, pk):
 @transaction.atomic
 def submit(request, pk):
     survey = get_object_or_404(Survey.objects.select_for_update(), pk=pk)
-    participant = available(survey, request.data.get('token') or request.query_params.get('token'))
+    token = request.data.get('token') or request.query_params.get('token')
     try: response_id = str(uuid.UUID(request.data.get('response_id','')))
     except (ValueError,TypeError,AttributeError): raise ValidationError({'response_id':'A UUID response ID is required.'})
-    if not survey.settings.get('allow_multiple',False) and survey.submissions.filter(metadata__response_id=response_id).exists():
-        raise ValidationError('This response has already been submitted.')
+    previous = survey.submissions.filter(response_id=response_id).first()
+    if previous:
+        if previous.participant_id and previous.participant.token != token: raise ValidationError('Invalid invitation token.')
+        return Response({'id':previous.id,'status':'completed'})
+    participant = available(survey, token)
     rows = request.data.get('answers')
     if not isinstance(rows,list): raise ValidationError({'answers':'Expected an array.'})
     values = {}
@@ -55,7 +59,7 @@ def submit(request, pk):
         try: validate_value(q,values.get(q.id))
         except ValidationError as exc: errors[str(q.id)] = exc.detail
     if errors: raise ValidationError({'answers':errors})
-    submission = Submission.objects.create(survey=survey, participant=participant, metadata={'response_id':response_id}, ip_address=request.META.get('REMOTE_ADDR'))
+    submission = Submission.objects.create(survey=survey, participant=participant, response_id=response_id, metadata={'response_id':response_id}, ip_address=request.META.get('REMOTE_ADDR'))
     Answer.objects.bulk_create([Answer(submission=submission,question=allowed[key],answer_value=value,answer_text=value if isinstance(value,str) else '') for key,value in values.items()])
     if participant:
         participant.completed_at = timezone.now()

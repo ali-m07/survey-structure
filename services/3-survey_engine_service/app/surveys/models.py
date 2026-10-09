@@ -104,12 +104,14 @@ class Participant(models.Model):
 class Submission(models.Model):
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='submissions')
     participant = models.ForeignKey(Participant, on_delete=models.CASCADE, related_name='submissions', null=True, blank=True)
+    response_id = models.UUIDField(null=True, blank=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     blockchain_hash = models.CharField(max_length=255, blank=True, null=True)
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
+        constraints = [models.UniqueConstraint(fields=['survey','response_id'], name='unique_survey_response_id')]
         db_table = 'submissions'
         ordering = ['-submitted_at']
 

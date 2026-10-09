@@ -93,6 +93,7 @@ class SurveyViewSet(ScopedViewSet):
             if rules.get('display_if'): rules['display_if']['question'] = remap.get(rules['display_if']['question'])
             if rules.get('jump_to'): rules['jump_to'] = {k:remap.get(v) for k,v in rules['jump_to'].items()}
             q.validation_rules = rules
+            for old,new in remap.items(): q.question_text = q.question_text.replace('{{'+str(old)+'}}','{{'+str(new)+'}}')
             q.save()
         audit(request,'duplicate.survey',copy)
         return Response(SurveySerializer(copy).data,status=201)
@@ -104,6 +105,19 @@ class SurveyViewSet(ScopedViewSet):
         qrcode.make(f"{settings.SURVEY_WEB_URL.rstrip('/')}/survey/{survey.id}").save(buffer,format='PNG')
         return HttpResponse(buffer.getvalue(),content_type='image/png')
     @action(detail=True, methods=['get'])
+    def analytics(self, request, pk=None):
+        from app.surveys.services.reports import analytics
+        return Response(analytics(self.get_object(),request.query_params))
+    @action(detail=True, methods=['get'], url_path='export')
+    def export_data(self, request, pk=None):
+        from app.surveys.services.reports import export
+        return export(self.get_object(),request.query_params)
+    @action(detail=True, methods=['get'])
+    def history(self, request, pk=None):
+        from app.surveys.models import AuditEvent
+        survey = self.get_object()
+        return Response(list(AuditEvent.objects.filter(tenant_id=survey.tenant_id,object_id=str(survey.id)).order_by('-created_at').values('id','action','created_at','detail')[:100]))
+    @action(detail=True, methods=['get'])
     def statistics(self, request, pk=None):
         survey = self.get_object()
         count = survey.participants.count()
@@ -113,6 +127,24 @@ class SurveyViewSet(ScopedViewSet):
 class SectionViewSet(ScopedViewSet):
     queryset = Section.objects.all()
     serializer_class = SectionSerializer
+
+    @action(detail=True, methods=['post'])
+    @transaction.atomic
+    def duplicate(self, request, pk=None):
+        source = self.get_object()
+        editable(source.survey)
+        copied = Section.objects.create(survey=source.survey,title=source.title+' (copy)',description=source.description,order=source.order+1)
+        remap = {}
+        for q in source.questions.all():
+            new = Question.objects.create(section=copied,question_text=q.question_text,question_type=q.question_type,is_required=q.is_required,order=q.order,options=q.options,validation_rules=q.validation_rules)
+            remap[q.id] = new.id
+        for q in copied.questions.all():
+            rules = q.validation_rules
+            if rules.get('display_if'): rules['display_if']['question'] = remap.get(rules['display_if']['question'],rules['display_if']['question'])
+            if rules.get('jump_to'): rules['jump_to'] = {k:remap.get(v,v) for k,v in rules['jump_to'].items()}
+            for old,new in remap.items(): q.question_text = q.question_text.replace('{{'+str(old)+'}}','{{'+str(new)+'}}')
+            q.validation_rules=rules;q.save()
+        return Response(SectionSerializer(copied).data,status=201)
 
 class QuestionViewSet(ScopedViewSet):
     queryset = Question.objects.all()
