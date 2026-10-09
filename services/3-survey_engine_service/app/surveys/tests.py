@@ -146,3 +146,16 @@ class SurveySecurityTests(TestCase):
         self.survey.refresh_from_db();self.publish();self.client.force_authenticate(None)
         response=self.client.get(self.base+f'public/surveys/{self.survey.id}/')
         self.assertTrue(response.data['settings']['randomize_options'])
+
+    def test_hidden_and_skipped_sources_cannot_enable_downstream(self):
+        from app.surveys.services.validation import active_questions
+        self.q.question_type='boolean';self.q.save()
+        hidden=Question.objects.create(section=self.section,order=1,question_type='text',question_text='Hidden source',validation_rules={'display_if':{'question':self.q.id,'operator':'equals','value':True}})
+        downstream=Question.objects.create(section=self.section,order=2,question_type='text',question_text='Downstream',is_required=True,validation_rules={'display_if':{'question':hidden.id,'operator':'equals','value':'X'}})
+        self.assertEqual([q.id for q in active_questions(self.survey,{self.q.id:False,hidden.id:'X'})],[self.q.id])
+        self.publish()
+        self.assertEqual(self.submit([{'question':self.q.id,'value':False}]).status_code,201)
+        self.assertEqual(self.submit([{'question':self.q.id,'value':False},{'question':hidden.id,'value':'X'}]).status_code,400)
+        self.q.validation_rules={'jump_to':{'false':downstream.id}};self.q.save()
+        hidden.validation_rules={};hidden.save()
+        self.assertEqual([q.id for q in active_questions(self.survey,{self.q.id:False,hidden.id:'X'})],[self.q.id])

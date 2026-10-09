@@ -75,15 +75,17 @@ def matches(condition, values):
 def active_questions(survey, values):
     qs = questions(survey)
     visible = []
+    active_values = {}
     skip_until = None
     for q in qs:
         if skip_until is not None:
             if q.id != skip_until: continue
             skip_until = None
         rules = q.validation_rules
-        if rules.get('display_if') and not matches(rules['display_if'], values): continue
+        if rules.get('display_if') and not matches(rules['display_if'], active_values): continue
         visible.append(q)
         value = values.get(q.id)
+        active_values[q.id] = value
         key = str(value).lower() if isinstance(value,bool) else str(value)
         skip_until = rules.get('jump_to', {}).get(key)
     return visible
