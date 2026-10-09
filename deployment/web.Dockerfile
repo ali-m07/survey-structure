@@ -1,7 +1,7 @@
 FROM node:20-alpine AS dependencies
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund --maxsockets=5 && test -x node_modules/.bin/next
 
 FROM node:20-alpine AS build
 WORKDIR /app
