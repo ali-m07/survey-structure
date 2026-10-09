@@ -3,9 +3,11 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { apiClient, SURVEY_API } from "../../services/api";
 import { Survey } from "../../types/survey";
+import { useAuth } from "../../hooks/useAuth";
 import { Webhooks } from "../../components/Webhooks";
 export default function ManageSurvey() {
   const router = useRouter();
+  const auth = useAuth();
   const id = router.query.id;
   const [survey, setSurvey] = useState<Survey>();
   const [analytics, setAnalytics] = useState<any>();
@@ -20,17 +22,20 @@ export default function ManageSurvey() {
     if (!id) return;
     try {
       setSurvey(await apiClient.get(`${SURVEY_API}/surveys/${id}/`));
-      const list = await apiClient.get<any>(
-        `${SURVEY_API}/participants/?survey=${id}`,
-      );
+      const list = auth.canEdit
+        ? await apiClient.get<any>(`${SURVEY_API}/participants/?survey=${id}`)
+        : [];
       setParticipants(Array.isArray(list) ? list : list.results || []);
     } catch (e) {
       setError(String(e));
     }
   };
   useEffect(() => {
-    load();
-  }, [id]);
+    if (!auth.loading) {
+      if (!auth.authenticated) router.replace("/login");
+      else load();
+    }
+  }, [id, auth.loading, auth.authenticated, auth.tenant, auth.canEdit]);
   const action = async (fn: () => Promise<any>) => {
     setBusy(true);
     setError("");
@@ -61,7 +66,9 @@ export default function ManageSurvey() {
       <div className="max-w-5xl mx-auto space-y-6">
         <nav className="flex gap-4">
           <Link href="/surveys">پرسشنامه‌ها</Link>
-          <Link href={`/surveys/${id}/edit`}>سازنده و پیش‌نمایش</Link>
+          {auth.canEdit && (
+            <Link href={`/surveys/${id}/edit`}>سازنده و پیش‌نمایش</Link>
+          )}
         </nav>
         <h1 className="text-3xl font-bold">{survey.title}</h1>
         <p>{survey.description}</p>
@@ -75,157 +82,161 @@ export default function ManageSurvey() {
         )}
         {notice && <p role="status">{notice}</p>}
         <fieldset disabled={busy} className="space-y-6">
-          <section className="bg-white rounded shadow p-6 space-y-4">
-            <h2 className="text-xl font-bold">انتشار</h2>
-            <div className="flex flex-wrap gap-4">
-              {survey.status === "draft" && (
-                <button
-                  className="bg-blue-600 text-white p-3 rounded"
-                  onClick={() =>
-                    action(() => apiClient.post(`${base}/publish/`, {}))
-                  }
-                >
-                  انتشار نسخه ثابت
-                </button>
-              )}
-              {survey.status === "active" && (
-                <button
-                  className="border p-3 rounded"
-                  onClick={() => {
-                    if (confirm("دریافت پاسخ بسته شود؟"))
-                      action(() => apiClient.post(`${base}/close/`, {}));
-                  }}
-                >
-                  بستن پرسشنامه
-                </button>
-              )}
-              <button
-                className="border p-3 rounded"
-                onClick={() =>
-                  action(async () => {
-                    const copy = await apiClient.post<Survey>(
-                      `${base}/duplicate/`,
-                      {},
-                    );
-                    router.push(`/surveys/${copy.id}/edit`);
-                  })
-                }
-              >
-                ساخت کپی برای ویرایش
-              </button>
-            </div>
-            {survey.status === "active" &&
-              !survey.settings?.invitation_only && (
-                <>
-                  <label className="block">
-                    لینک پاسخ‌دهی
-                    <input
-                      readOnly
-                      className="border p-3 rounded w-full"
-                      value={
-                        typeof window === "undefined"
-                          ? ""
-                          : `${window.location.origin}/survey/${id}`
-                      }
-                    />
-                  </label>
-                  <div className="flex gap-4">
-                    <Link href={`/survey/${id}`} target="_blank">
-                      باز کردن لینک عمومی
-                    </Link>
-                    <button
-                      onClick={() =>
-                        action(() =>
-                          apiClient.download(
-                            `${base}/qr/`,
-                            `survey-${id}-qr.png`,
-                          ),
-                        )
-                      }
-                    >
-                      دریافت QR
-                    </button>
-                  </div>
-                </>
-              )}
-            {survey.settings?.invitation_only && (
-              <p>
-                این پرسشنامه فقط با لینک دعوت اختصاصی باز می‌شود؛ لینک عمومی و
-                QR برای پاسخ‌دهی کافی نیست.
-              </p>
-            )}
-          </section>
-          <section className="bg-white rounded shadow p-6 space-y-4">
-            <h2 className="text-xl font-bold">دعوت شرکت‌کننده</h2>
-            <form
-              className="flex flex-wrap gap-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const form = new FormData(e.currentTarget);
-                action(() =>
-                  apiClient.post(`${SURVEY_API}/participants/`, {
-                    survey: survey.id,
-                    email: form.get("email"),
-                    is_anonymous: form.get("anonymous") === "on",
-                  }),
-                );
-              }}
-            >
-              <label>
-                ایمیل
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  className="border p-2 block"
-                />
-              </label>
-              <label>
-                <input name="anonymous" type="checkbox" /> پاسخ ناشناس
-              </label>
-              <button className="border p-3 rounded">ثبت شرکت‌کننده</button>
-            </form>
-            <div className="space-y-3">
-              {participants.map((p) => (
-                <div key={p.id} className="border p-3 rounded space-y-2">
-                  <p>
-                    {p.email} ·{" "}
-                    {p.completed_at
-                      ? "تکمیل شده"
-                      : p.delivery_status || "ثبت شده"}
-                  </p>
+          {auth.canEdit && (
+            <section className="bg-white rounded shadow p-6 space-y-4">
+              <h2 className="text-xl font-bold">انتشار</h2>
+              <div className="flex flex-wrap gap-4">
+                {survey.status === "draft" && (
                   <button
-                    className="border p-2 rounded"
+                    className="bg-blue-600 text-white p-3 rounded"
                     onClick={() =>
-                      action(async () => {
-                        const result = await apiClient.post<any>(
-                          `${SURVEY_API}/participants/${p.id}/send_invitation/`,
-                          {},
-                        );
-                        setNotice(`وضعیت ارسال: ${result.status}`);
-                      })
+                      action(() => apiClient.post(`${base}/publish/`, {}))
                     }
                   >
-                    ارسال دعوت / یادآوری
+                    انتشار نسخه ثابت
                   </button>
-                  {p.token && (
-                    <label className="block text-sm">
-                      لینک اختصاصی
+                )}
+                {survey.status === "active" && (
+                  <button
+                    className="border p-3 rounded"
+                    onClick={() => {
+                      if (confirm("دریافت پاسخ بسته شود؟"))
+                        action(() => apiClient.post(`${base}/close/`, {}));
+                    }}
+                  >
+                    بستن پرسشنامه
+                  </button>
+                )}
+                <button
+                  className="border p-3 rounded"
+                  onClick={() =>
+                    action(async () => {
+                      const copy = await apiClient.post<Survey>(
+                        `${base}/duplicate/`,
+                        {},
+                      );
+                      router.push(`/surveys/${copy.id}/edit`);
+                    })
+                  }
+                >
+                  ساخت کپی برای ویرایش
+                </button>
+              </div>
+              {survey.status === "active" &&
+                !survey.settings?.invitation_only && (
+                  <>
+                    <label className="block">
+                      لینک پاسخ‌دهی
                       <input
-                        className="border p-2 w-full"
                         readOnly
+                        className="border p-3 rounded w-full"
                         value={
                           typeof window === "undefined"
                             ? ""
-                            : `${window.location.origin}/survey/${id}?token=${encodeURIComponent(p.token)}`
+                            : `${window.location.origin}/survey/${id}`
                         }
                       />
                     </label>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
+                    <div className="flex gap-4">
+                      <Link href={`/survey/${id}`} target="_blank">
+                        باز کردن لینک عمومی
+                      </Link>
+                      <button
+                        onClick={() =>
+                          action(() =>
+                            apiClient.download(
+                              `${base}/qr/`,
+                              `survey-${id}-qr.png`,
+                            ),
+                          )
+                        }
+                      >
+                        دریافت QR
+                      </button>
+                    </div>
+                  </>
+                )}
+              {survey.settings?.invitation_only && (
+                <p>
+                  این پرسشنامه فقط با لینک دعوت اختصاصی باز می‌شود؛ لینک عمومی و
+                  QR برای پاسخ‌دهی کافی نیست.
+                </p>
+              )}
+            </section>
+          )}
+          {auth.canEdit && (
+            <section className="bg-white rounded shadow p-6 space-y-4">
+              <h2 className="text-xl font-bold">دعوت شرکت‌کننده</h2>
+              <form
+                className="flex flex-wrap gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = new FormData(e.currentTarget);
+                  action(() =>
+                    apiClient.post(`${SURVEY_API}/participants/`, {
+                      survey: survey.id,
+                      email: form.get("email"),
+                      is_anonymous: form.get("anonymous") === "on",
+                    }),
+                  );
+                }}
+              >
+                <label>
+                  ایمیل
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    className="border p-2 block"
+                  />
+                </label>
+                <label>
+                  <input name="anonymous" type="checkbox" /> پاسخ ناشناس
+                </label>
+                <button className="border p-3 rounded">ثبت شرکت‌کننده</button>
+              </form>
+              <div className="space-y-3">
+                {participants.map((p) => (
+                  <div key={p.id} className="border p-3 rounded space-y-2">
+                    <p>
+                      {p.email} ·{" "}
+                      {p.completed_at
+                        ? "تکمیل شده"
+                        : p.delivery_status || "ثبت شده"}
+                    </p>
+                    <button
+                      className="border p-2 rounded"
+                      onClick={() =>
+                        action(async () => {
+                          const result = await apiClient.post<any>(
+                            `${SURVEY_API}/participants/${p.id}/send_invitation/`,
+                            {},
+                          );
+                          setNotice(`وضعیت ارسال: ${result.status}`);
+                        })
+                      }
+                    >
+                      ارسال دعوت / یادآوری
+                    </button>
+                    {p.token && (
+                      <label className="block text-sm">
+                        لینک اختصاصی
+                        <input
+                          className="border p-2 w-full"
+                          readOnly
+                          value={
+                            typeof window === "undefined"
+                              ? ""
+                              : `${window.location.origin}/survey/${id}?token=${encodeURIComponent(p.token)}`
+                          }
+                        />
+                      </label>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
           <section className="bg-white rounded shadow p-6 space-y-4">
             <h2 className="text-xl font-bold">تحلیل پاسخ‌ها</h2>
             <div className="flex flex-wrap gap-3">
@@ -338,7 +349,7 @@ export default function ManageSurvey() {
               </p>
             ))}
           </section>
-          <Webhooks surveyId={survey.id} />
+          {auth.canEdit && <Webhooks surveyId={survey.id} />}
         </fieldset>
       </div>
     </main>
