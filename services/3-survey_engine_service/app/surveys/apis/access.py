@@ -16,4 +16,5 @@ def editable(survey):
         raise ValidationError('Published structures are immutable. Duplicate the survey to edit it.')
 
 def audit(request, verb, obj):
-    AuditEvent.objects.create(tenant_id=tenant(request), user=request.user, action=verb, object_id=str(obj.pk))
+    survey = obj if obj._meta.model_name=='survey' else getattr(obj,'survey',None) or (obj.section.survey if hasattr(obj,'section') else None)
+    AuditEvent.objects.create(tenant_id=tenant(request), user=request.user, action=verb, object_id=str(obj.pk),detail={'model':obj._meta.model_name,'survey_id':survey.id if survey else None})

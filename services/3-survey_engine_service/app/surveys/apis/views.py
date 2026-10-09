@@ -128,7 +128,7 @@ class SurveyViewSet(ScopedViewSet):
     def history(self, request, pk=None):
         from app.surveys.models import AuditEvent
         survey = self.get_object()
-        return Response(list(AuditEvent.objects.filter(tenant_id=survey.tenant_id,object_id=str(survey.id)).order_by('-created_at').values('id','action','created_at','detail')[:100]))
+        return Response(list(AuditEvent.objects.filter(tenant_id=survey.tenant_id,detail__survey_id=survey.id).order_by('-created_at').values('id','action','created_at','detail')[:100]))
     @action(detail=True, methods=['get'])
     def statistics(self, request, pk=None):
         survey = self.get_object()
