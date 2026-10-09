@@ -38,3 +38,19 @@
 ## روش توسعه
 
 هر تغییر مستقل در یک کامیت ثبت می‌شود. سه حوزه بک‌اند، رابط و راه‌اندازی مالک جدا دارند و عامل اصلی یکپارچه‌سازی و گزارش پیشرفت را انجام می‌دهد. تکمیل فاز فقط پس از بررسی معیار پذیرش آن اعلام می‌شود.
+
+## Test runner
+
+Run all survey checks from the repository root:
+
+```powershell
+python scripts/run-tests.py
+# Windows shortcut:
+./scripts/test.ps1
+```
+
+Use `--install` on first setup to install Python requirements and locked npm dependencies. Select one part with `--suite backend` or `--suite frontend`. `make test` runs the same runner.
+
+The backend checks Django configuration, missing migrations, and survey tests using SQLite and Django's isolated test database. The frontend runs a production build (including Next lint checks) and TypeScript checks. Frontend checks write build output, so stop a local frontend development server before running them. The runner returns a nonzero exit code on failure and writes logs and `summary.json` under ignored `test-results/<suite>/`.
+
+GitHub Actions runs the two suites in parallel on pushes and relevant pull requests. It also supports manual runs through **Actions → Survey platform checks → Run workflow** and uploads the reports even when checks fail.

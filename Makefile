@@ -21,14 +21,8 @@ build: ## Build all Docker images
 	@echo "Building Docker images..."
 	docker-compose build
 
-test: ## Run tests for all services
-	@echo "Running tests..."
-	@for service in services/*/; do \
-		if [ -f "$$service/pyproject.toml" ]; then \
-			echo "Running tests for $$service"; \
-			cd $$service && poetry run pytest && cd ../..; \
-		fi \
-	done
+test: ## Run survey backend tests and frontend checks
+	python scripts/run-tests.py
 
 dev-up: ## Start development environment
 	@echo "Starting development environment..."
