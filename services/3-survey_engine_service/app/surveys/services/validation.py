@@ -1,4 +1,5 @@
 from datetime import date
+import re
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
@@ -42,6 +43,9 @@ def validate_structure(survey):
         for key in ('min_length','max_length','min_choices','max_choices'):
             if key in rules and (int(rules[key]) != rules[key] or rules[key] < 0): raise ValidationError('Count limits must be nonnegative integers.')
         if q.question_type == 'rating' and (rules.get('max',5) > 100 or rules.get('min',1) < 0): raise ValidationError('Rating bounds must be between 0 and 100.')
+        for reference in re.findall(r'\{\{(\d+)\}\}',q.question_text):
+            source=int(reference)
+            if source not in positions or positions[source]>=positions[q.id]: raise ValidationError('Answer piping must refer to earlier questions.')
         condition = rules.get('display_if')
         if condition:
             source = condition.get('question')

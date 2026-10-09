@@ -49,6 +49,12 @@ class ScopedViewSet(viewsets.ModelViewSet):
             if name in self.request.query_params and name in [f.name for f in self.queryset.model._meta.fields]:
                 qs = qs.filter(**{name+'_id':self.request.query_params[name]})
         return qs
+    def perform_create(self, serializer):
+        obj=serializer.save()
+        audit(self.request,'create.'+obj._meta.model_name,obj)
+    def perform_update(self, serializer):
+        obj=serializer.save()
+        audit(self.request,'update.'+obj._meta.model_name,obj)
     def perform_destroy(self, instance):
         survey = instance if isinstance(instance, Survey) else getattr(instance, 'survey', None) or instance.section.survey
         editable(survey)
