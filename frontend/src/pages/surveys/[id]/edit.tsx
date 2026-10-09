@@ -1,25 +1,703 @@
-import {useEffect,useState} from 'react';
-import {useRouter} from 'next/router';
-import Link from 'next/link';
-import {apiClient,SURVEY_API} from '../../../services/api';
-import {Survey,Question,QUESTION_TYPES} from '../../../types/survey';
-import {AutoField} from '../../../components/AutoField';
-import {SurveyRunner} from '../../../components/SurveyRunner';
-export default function Builder(){const {query}=useRouter();const id=query.id;const [survey,setSurvey]=useState<Survey>();const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [preview,setPreview]=useState(false);
- const load=async()=>{if(!id)return;try{setSurvey(await apiClient.get(`${SURVEY_API}/surveys/${id}/`));}catch(e){setError(String(e));}};useEffect(()=>{load();},[id]);
- const action=async(fn:()=>Promise<unknown>)=>{setBusy(true);setError('');try{await fn();await load();}catch(e){setError(String(e));}finally{setBusy(false);}};
- const patch=async(kind:string,key:number,data:unknown)=>{await apiClient.patch(`${SURVEY_API}/${kind}/${key}/`,data);};
- if(!survey)return <main className="p-8" dir="rtl">{error||'در حال دریافت…'} <Link href="/surveys">بازگشت</Link></main>;
- const locked=survey.status!=='draft';
- const questionUpdate=async(q:Question,data:Partial<Question>)=>{await patch('questions',q.id,data);setSurvey(current=>current?{...current,sections:current.sections.map(s=>({...s,questions:s.questions.map(item=>item.id===q.id?{...item,...data}:item)}))}:current);};
- const reorder=async(kind:string,items:{id:number;order:number}[],index:number,delta:number)=>{const next=[...items];[next[index],next[index+delta]]=[next[index+delta],next[index]];for(let i=0;i<next.length;i++)await patch(kind,next[i].id,{order:i});};
- const copy=async(q:Question,section:number,order:number)=>apiClient.post(`${SURVEY_API}/questions/`,{section,question_text:q.question_text,question_type:q.question_type,is_required:q.is_required,options:q.options,validation_rules:q.validation_rules,order});
- return <main dir="rtl" className="min-h-screen bg-blue-50 p-4 md:p-8"><div className="max-w-4xl mx-auto space-y-4"><nav className="flex gap-4"><Link href="/surveys">پرسشنامه‌ها</Link><Link href={`/surveys/${id}`}>انتشار و گزارش</Link><button onClick={()=>setPreview(!preview)}>{preview?'ویرایش':'پیش‌نمایش'}</button></nav><h1 className="text-3xl font-bold">سازنده پرسشنامه</h1>{error&&<p role="alert" className="bg-red-50 text-red-800 p-4">{error}</p>}{locked&&<p className="bg-yellow-50 p-4">نسخه منتشر شده قابل ویرایش نیست. از صفحه مدیریت یک کپی بسازید.</p>}{preview?<SurveyRunner survey={survey} preview/>:<fieldset disabled={busy||locked} className="space-y-4"><section className="bg-white p-6 rounded shadow space-y-3"><AutoField label="عنوان" value={survey.title} onSave={async title=>{await patch('surveys',survey.id,{title});setSurvey(current=>current?{...current,title}:current);}}/><AutoField label="توضیح" value={survey.description} multiline onSave={async description=>{await patch('surveys',survey.id,{description});setSurvey(current=>current?{...current,description}:current);}}/><label>زبان <select value={survey.settings?.language||'fa'} onChange={e=>action(()=>patch('surveys',survey.id,{settings:{...survey.settings,language:e.target.value}}))}><option value="fa">فارسی</option><option value="en">English</option></select></label><label className="block"><input type="checkbox" checked={!!survey.settings?.allow_multiple} onChange={e=>action(()=>patch('surveys',survey.id,{settings:{...survey.settings,allow_multiple:e.target.checked}}))}/> اجازه پاسخ مجدد</label></section>{survey.sections.map((section,si)=><section key={section.id} className="bg-white p-5 rounded shadow space-y-4"><div className="flex flex-wrap gap-3"><h2 className="font-bold">بخش {si+1}</h2><button disabled={si===0} onClick={()=>action(()=>reorder('sections',survey.sections,si,-1))}>↑</button><button disabled={si===survey.sections.length-1} onClick={()=>action(()=>reorder('sections',survey.sections,si,1))}>↓</button><button onClick={()=>action(()=>apiClient.post(`${SURVEY_API}/sections/${section.id}/duplicate/`,{}))}>کپی بخش</button><button className="text-red-700" onClick={()=>{if(confirm('این بخش و سؤال‌ها حذف شوند؟'))action(()=>apiClient.delete(`${SURVEY_API}/sections/${section.id}/`));}}>حذف بخش</button></div><AutoField label="عنوان بخش" value={section.title} onSave={title=>patch('sections',section.id,{title})}/><AutoField label="توضیح بخش" value={section.description} onSave={description=>patch('sections',section.id,{description})}/>{section.questions.map((q,qi)=><article key={q.id} className="border rounded p-4 space-y-3"><div className="flex flex-wrap gap-3"><span>سؤال {qi+1} · شناسه {q.id}</span><button disabled={qi===0} onClick={()=>action(()=>reorder('questions',section.questions,qi,-1))}>↑</button><button disabled={qi===section.questions.length-1} onClick={()=>action(()=>reorder('questions',section.questions,qi,1))}>↓</button><button onClick={()=>action(()=>copy(q,section.id,section.questions.length))}>کپی</button><button className="text-red-700" onClick={()=>{if(confirm('سؤال حذف شود؟'))action(()=>apiClient.delete(`${SURVEY_API}/questions/${q.id}/`));}}>حذف</button><label>انتقال به <select value={section.id} onChange={e=>action(()=>patch('questions',q.id,{section:Number(e.target.value),order:survey.sections.find(s=>s.id===Number(e.target.value))?.questions.length||0}))}>{survey.sections.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select></label></div><AutoField label="متن سؤال (ارجاع به پاسخ: {{شناسه سؤال}})" value={q.question_text} multiline onSave={question_text=>questionUpdate(q,{question_text})}/><label>نوع <select value={q.question_type} onChange={e=>action(()=>questionUpdate(q,{question_type:e.target.value}))}>{QUESTION_TYPES.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label><label className="block"><input type="checkbox" checked={q.is_required} onChange={e=>action(()=>questionUpdate(q,{is_required:e.target.checked}))}/> الزامی</label>{['single_choice','multiple_choice','ranking','scale'].includes(q.question_type)&&<AutoField label="گزینه‌ها (هر گزینه در یک خط)" value={(q.options||[]).join('\n')} multiline onSave={value=>questionUpdate(q,{options:value.split('\n').map(x=>x.trim()).filter(Boolean)})}/>}<details><summary>تنظیمات و منطق سؤال</summary><RuleEditor question={q} questions={survey.sections.flatMap(s=>s.questions)} save={rules=>questionUpdate(q,{validation_rules:rules})}/></details></article>)}<button className="border border-dashed p-3 w-full" onClick={()=>action(()=>apiClient.post(`${SURVEY_API}/questions/`,{section:section.id,question_text:'سؤال جدید',question_type:'text',is_required:false,order:section.questions.length,options:[],validation_rules:{}}))}>+ افزودن سؤال</button></section>)}<button className="bg-blue-600 text-white p-3 rounded" onClick={()=>action(()=>apiClient.post(`${SURVEY_API}/sections/`,{survey:survey.id,title:'بخش جدید',description:'',order:survey.sections.length}))}>+ افزودن بخش</button></fieldset>}</div></main>;
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { apiClient, SURVEY_API } from "../../../services/api";
+import { Survey, Question, QUESTION_TYPES } from "../../../types/survey";
+import { AutoField } from "../../../components/AutoField";
+import { SurveyRunner } from "../../../components/SurveyRunner";
+export default function Builder() {
+  const { query } = useRouter();
+  const id = query.id;
+  const [survey, setSurvey] = useState<Survey>();
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const load = async () => {
+    if (!id) return;
+    try {
+      setSurvey(await apiClient.get(`${SURVEY_API}/surveys/${id}/`));
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+  useEffect(() => {
+    load();
+  }, [id]);
+  const action = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setError("");
+    try {
+      await fn();
+      await load();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const patch = async (kind: string, key: number, data: unknown) => {
+    await apiClient.patch(`${SURVEY_API}/${kind}/${key}/`, data);
+  };
+  if (!survey)
+    return (
+      <main className="p-8" dir="rtl">
+        {error || "در حال دریافت…"} <Link href="/surveys">بازگشت</Link>
+      </main>
+    );
+  const locked = survey.status !== "draft";
+  const questionUpdate = async (q: Question, data: Partial<Question>) => {
+    await patch("questions", q.id, data);
+    setSurvey((current) =>
+      current
+        ? {
+            ...current,
+            sections: current.sections.map((s) => ({
+              ...s,
+              questions: s.questions.map((item) =>
+                item.id === q.id ? { ...item, ...data } : item,
+              ),
+            })),
+          }
+        : current,
+    );
+  };
+  const reorder = async (
+    kind: string,
+    items: { id: number; order: number }[],
+    index: number,
+    delta: number,
+  ) => {
+    const next = [...items];
+    [next[index], next[index + delta]] = [next[index + delta], next[index]];
+    for (let i = 0; i < next.length; i++)
+      await patch(kind, next[i].id, { order: i });
+  };
+  const copy = async (q: Question, section: number, order: number) =>
+    apiClient.post(`${SURVEY_API}/questions/`, {
+      section,
+      question_text: q.question_text,
+      question_type: q.question_type,
+      is_required: q.is_required,
+      options: q.options,
+      validation_rules: q.validation_rules,
+      order,
+    });
+  return (
+    <main dir="rtl" className="min-h-screen bg-blue-50 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto space-y-4">
+        <nav className="flex gap-4">
+          <Link href="/surveys">پرسشنامه‌ها</Link>
+          <Link href={`/surveys/${id}`}>انتشار و گزارش</Link>
+          <button onClick={() => setPreview(!preview)}>
+            {preview ? "ویرایش" : "پیش‌نمایش"}
+          </button>
+        </nav>
+        <h1 className="text-3xl font-bold">سازنده پرسشنامه</h1>
+        {error && (
+          <p role="alert" className="bg-red-50 text-red-800 p-4">
+            {error}
+          </p>
+        )}
+        {locked && (
+          <p className="bg-yellow-50 p-4">
+            نسخه منتشر شده قابل ویرایش نیست. از صفحه مدیریت یک کپی بسازید.
+          </p>
+        )}
+        {preview ? (
+          <SurveyRunner survey={survey} preview />
+        ) : (
+          <fieldset disabled={busy || locked} className="space-y-4">
+            <section className="bg-white p-6 rounded shadow space-y-3">
+              <AutoField
+                label="عنوان"
+                value={survey.title}
+                onSave={async (title) => {
+                  await patch("surveys", survey.id, { title });
+                  setSurvey((current) =>
+                    current ? { ...current, title } : current,
+                  );
+                }}
+              />
+              <AutoField
+                label="توضیح"
+                value={survey.description}
+                multiline
+                onSave={async (description) => {
+                  await patch("surveys", survey.id, { description });
+                  setSurvey((current) =>
+                    current ? { ...current, description } : current,
+                  );
+                }}
+              />
+              <label>
+                زبان{" "}
+                <select
+                  value={survey.settings?.language || "fa"}
+                  onChange={(e) =>
+                    action(() =>
+                      patch("surveys", survey.id, {
+                        settings: {
+                          ...survey.settings,
+                          language: e.target.value,
+                        },
+                      }),
+                    )
+                  }
+                >
+                  <option value="fa">فارسی</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
+              <label className="block">
+                <input
+                  type="checkbox"
+                  checked={!!survey.settings?.allow_multiple}
+                  onChange={(e) =>
+                    action(() =>
+                      patch("surveys", survey.id, {
+                        settings: {
+                          ...survey.settings,
+                          allow_multiple: e.target.checked,
+                        },
+                      }),
+                    )
+                  }
+                />{" "}
+                اجازه پاسخ مجدد
+              </label>
+              <label className="block">
+                <input
+                  type="checkbox"
+                  checked={!!survey.settings?.invitation_only}
+                  onChange={(e) =>
+                    action(() =>
+                      patch("surveys", survey.id, {
+                        settings: {
+                          ...survey.settings,
+                          invitation_only: e.target.checked,
+                        },
+                      }),
+                    )
+                  }
+                />{" "}
+                فقط با دعوت اختصاصی
+              </label>
+              {(["starts_at", "ends_at"] as const).map((key) => (
+                <label key={key} className="block">
+                  {key === "starts_at"
+                    ? "شروع دریافت پاسخ (زمان محلی)"
+                    : "پایان دریافت پاسخ (زمان محلی)"}
+                  <input
+                    type="datetime-local"
+                    className="border p-2 block"
+                    value={survey[key] ? localDateTime(survey[key]!) : ""}
+                    onChange={(e) =>
+                      action(() =>
+                        patch("surveys", survey.id, {
+                          [key]: e.target.value
+                            ? new Date(e.target.value).toISOString()
+                            : null,
+                        }),
+                      )
+                    }
+                  />
+                </label>
+              ))}
+            </section>
+            {survey.sections.map((section, si) => (
+              <section
+                key={section.id}
+                className="bg-white p-5 rounded shadow space-y-4"
+              >
+                <div className="flex flex-wrap gap-3">
+                  <h2 className="font-bold">بخش {si + 1}</h2>
+                  <button
+                    disabled={si === 0}
+                    onClick={() =>
+                      action(() => reorder("sections", survey.sections, si, -1))
+                    }
+                  >
+                    ↑
+                  </button>
+                  <button
+                    disabled={si === survey.sections.length - 1}
+                    onClick={() =>
+                      action(() => reorder("sections", survey.sections, si, 1))
+                    }
+                  >
+                    ↓
+                  </button>
+                  <button
+                    onClick={() =>
+                      action(() =>
+                        apiClient.post(
+                          `${SURVEY_API}/sections/${section.id}/duplicate/`,
+                          {},
+                        ),
+                      )
+                    }
+                  >
+                    کپی بخش
+                  </button>
+                  <button
+                    className="text-red-700"
+                    onClick={() => {
+                      if (confirm("این بخش و سؤال‌ها حذف شوند؟"))
+                        action(() =>
+                          apiClient.delete(
+                            `${SURVEY_API}/sections/${section.id}/`,
+                          ),
+                        );
+                    }}
+                  >
+                    حذف بخش
+                  </button>
+                </div>
+                <AutoField
+                  label="عنوان بخش"
+                  value={section.title}
+                  onSave={(title) => patch("sections", section.id, { title })}
+                />
+                <AutoField
+                  label="توضیح بخش"
+                  value={section.description}
+                  onSave={(description) =>
+                    patch("sections", section.id, { description })
+                  }
+                />
+                {section.questions.map((q, qi) => (
+                  <article key={q.id} className="border rounded p-4 space-y-3">
+                    <div className="flex flex-wrap gap-3">
+                      <span>
+                        سؤال {qi + 1} · شناسه {q.id}
+                      </span>
+                      <button
+                        disabled={qi === 0}
+                        onClick={() =>
+                          action(() =>
+                            reorder("questions", section.questions, qi, -1),
+                          )
+                        }
+                      >
+                        ↑
+                      </button>
+                      <button
+                        disabled={qi === section.questions.length - 1}
+                        onClick={() =>
+                          action(() =>
+                            reorder("questions", section.questions, qi, 1),
+                          )
+                        }
+                      >
+                        ↓
+                      </button>
+                      <button
+                        onClick={() =>
+                          action(() =>
+                            copy(q, section.id, section.questions.length),
+                          )
+                        }
+                      >
+                        کپی
+                      </button>
+                      <button
+                        className="text-red-700"
+                        onClick={() => {
+                          if (confirm("سؤال حذف شود؟"))
+                            action(() =>
+                              apiClient.delete(
+                                `${SURVEY_API}/questions/${q.id}/`,
+                              ),
+                            );
+                        }}
+                      >
+                        حذف
+                      </button>
+                      <label>
+                        انتقال به{" "}
+                        <select
+                          value={section.id}
+                          onChange={(e) =>
+                            action(() =>
+                              patch("questions", q.id, {
+                                section: Number(e.target.value),
+                                order:
+                                  survey.sections.find(
+                                    (s) => s.id === Number(e.target.value),
+                                  )?.questions.length || 0,
+                              }),
+                            )
+                          }
+                        >
+                          {survey.sections.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.title}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <AutoField
+                      label="متن سؤال (ارجاع به پاسخ: {{شناسه سؤال}})"
+                      value={q.question_text}
+                      multiline
+                      onSave={(question_text) =>
+                        questionUpdate(q, { question_text })
+                      }
+                    />
+                    <label>
+                      نوع{" "}
+                      <select
+                        value={q.question_type}
+                        onChange={(e) =>
+                          action(() =>
+                            questionUpdate(q, {
+                              question_type: e.target.value,
+                            }),
+                          )
+                        }
+                      >
+                        {QUESTION_TYPES.map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block">
+                      <input
+                        type="checkbox"
+                        checked={q.is_required}
+                        onChange={(e) =>
+                          action(() =>
+                            questionUpdate(q, {
+                              is_required: e.target.checked,
+                            }),
+                          )
+                        }
+                      />{" "}
+                      الزامی
+                    </label>
+                    {[
+                      "single_choice",
+                      "multiple_choice",
+                      "ranking",
+                      "scale",
+                    ].includes(q.question_type) && (
+                      <AutoField
+                        label="گزینه‌ها (هر گزینه در یک خط)"
+                        value={(q.options || []).join("\n")}
+                        multiline
+                        onSave={(value) =>
+                          questionUpdate(q, {
+                            options: value
+                              .split("\n")
+                              .map((x) => x.trim())
+                              .filter(Boolean),
+                          })
+                        }
+                      />
+                    )}
+                    <details>
+                      <summary>تنظیمات و منطق سؤال</summary>
+                      <RuleEditor
+                        question={q}
+                        questions={survey.sections.flatMap((s) => s.questions)}
+                        save={(rules) =>
+                          questionUpdate(q, { validation_rules: rules })
+                        }
+                      />
+                    </details>
+                  </article>
+                ))}
+                <button
+                  className="border border-dashed p-3 w-full"
+                  onClick={() =>
+                    action(() =>
+                      apiClient.post(`${SURVEY_API}/questions/`, {
+                        section: section.id,
+                        question_text: "سؤال جدید",
+                        question_type: "text",
+                        is_required: false,
+                        order: section.questions.length,
+                        options: [],
+                        validation_rules: {},
+                      }),
+                    )
+                  }
+                >
+                  + افزودن سؤال
+                </button>
+              </section>
+            ))}
+            <button
+              className="bg-blue-600 text-white p-3 rounded"
+              onClick={() =>
+                action(() =>
+                  apiClient.post(`${SURVEY_API}/sections/`, {
+                    survey: survey.id,
+                    title: "بخش جدید",
+                    description: "",
+                    order: survey.sections.length,
+                  }),
+                )
+              }
+            >
+              + افزودن بخش
+            </button>
+          </fieldset>
+        )}
+      </div>
+    </main>
+  );
 }
-function RuleEditor({question,questions,save}:{question:Question;questions:Question[];save:(rules:any)=>Promise<void>}){
- const [rules,setRules]=useState(question.validation_rules||{});const [status,setStatus]=useState('');const index=questions.findIndex(q=>q.id===question.id);const earlier=questions.slice(0,index);const later=questions.slice(index+1);const bounds=['number','rating','nps'].includes(question.question_type)?[['min','حداقل'],['max','حداکثر']]:['text','email'].includes(question.question_type)?[['min_length','حداقل طول'],['max_length','حداکثر طول']]:question.question_type==='multiple_choice'?[['min_choices','حداقل انتخاب'],['max_choices','حداکثر انتخاب']]:[];
- const update=(key:string,value:any)=>setRules(current=>({...current,[key]:value}));const source=earlier.find(q=>q.id===rules.display_if?.question);const numeric=source&&['number','rating','nps'].includes(source.question_type);
- const triggerOptions=question.question_type==='boolean'?['true','false']:question.question_type==='nps'?Array.from({length:11},(_,i)=>String(i)):question.question_type==='rating'?Array.from({length:Math.min(101,Math.max(0,(rules.max??5)-(rules.min??1)+1))},(_,i)=>String(i+(rules.min??1))):question.options||[];
- return <div className="space-y-4 pt-3">{bounds.map(([key,label])=><label key={key} className="block">{label}<input className="border p-2 block" type="number" value={(rules as any)[key]??''} onChange={e=>update(key,e.target.value===''?undefined:Number(e.target.value))}/></label>)}{question.question_type==='matrix'&&['rows','columns'].map(key=><label key={key} className="block">{key==='rows'?'ردیف‌های ماتریس':'ستون‌های ماتریس'} (هر مورد یک خط)<textarea className="border p-2 w-full" value={((rules as any)[key]||[]).join('\n')} onChange={e=>update(key,e.target.value.split('\n').filter(Boolean))}/></label>)}<div className="border p-3 rounded space-y-2"><label className="block">نمایش شرطی بر اساس سؤال قبلی<select className="border p-2 block w-full" value={rules.display_if?.question||''} onChange={e=>update('display_if',e.target.value?{question:Number(e.target.value),operator:'equals',value:''}:undefined)}><option value="">همیشه نمایش داده شود</option>{earlier.map(q=><option key={q.id} value={q.id}>{q.question_text}</option>)}</select></label>{rules.display_if&&<><label className="block">شرط<select className="border p-2 block" value={rules.display_if.operator} onChange={e=>update('display_if',{...rules.display_if,operator:e.target.value})}>{[['equals','برابر'],['not_equals','نابرابر'],['contains','شامل'],['greater_than','بزرگتر'],['less_than','کوچکتر'],['answered','پاسخ داده شده']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>{rules.display_if.operator!=='answered'&&(source?.question_type==='boolean'?<label>پاسخ<select className="border p-2" value={String(rules.display_if.value)} onChange={e=>update('display_if',{...rules.display_if,value:e.target.value==='true'})}><option value="true">بله</option><option value="false">خیر</option></select></label>:<label className="block">مقدار<input className="border p-2 block" type={numeric?'number':'text'} list={`choices-${question.id}`} value={String(rules.display_if.value??'')} onChange={e=>update('display_if',{...rules.display_if,value:numeric?Number(e.target.value):e.target.value})}/><datalist id={`choices-${question.id}`}>{(source?.options||[]).map(v=><option key={v} value={v}/>)}</datalist></label>)}</>}</div>{['single_choice','scale','rating','nps','boolean'].includes(question.question_type)&&<div className="border p-3 rounded space-y-2"><h3 className="font-semibold">پرش به سؤال بعدی بر اساس پاسخ</h3>{triggerOptions.map(trigger=><label key={trigger} className="block">پاسخ {trigger}<select className="border p-2 block w-full" value={rules.jump_to?.[trigger]||''} onChange={e=>{const branches={...rules.jump_to};if(e.target.value)branches[trigger]=Number(e.target.value);else delete branches[trigger];update('jump_to',branches);}}><option value="">ادامه معمول</option>{later.map(q=><option key={q.id} value={q.id}>{q.question_text}</option>)}</select></label>)}</div>}<button className="border p-2 rounded" onClick={async()=>{try{await save(rules);setStatus('ذخیره شد');}catch(e){setStatus(String(e));}}}>ذخیره تنظیمات و منطق</button><p role="status">{status}</p></div>;
+function localDateTime(value: string) {
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
 }
-
+function RuleEditor({
+  question,
+  questions,
+  save,
+}: {
+  question: Question;
+  questions: Question[];
+  save: (rules: any) => Promise<void>;
+}) {
+  const [rules, setRules] = useState(question.validation_rules || {});
+  const [matrixRows, setMatrixRows] = useState(
+    (question.validation_rules?.rows || []).join("\n"),
+  );
+  const [matrixColumns, setMatrixColumns] = useState(
+    (question.validation_rules?.columns || []).join("\n"),
+  );
+  const [status, setStatus] = useState("");
+  const index = questions.findIndex((q) => q.id === question.id);
+  const earlier = questions.slice(0, index);
+  const later = questions.slice(index + 1);
+  const bounds = ["number", "rating", "nps"].includes(question.question_type)
+    ? [
+        ["min", "حداقل"],
+        ["max", "حداکثر"],
+      ]
+    : ["text", "email"].includes(question.question_type)
+      ? [
+          ["min_length", "حداقل طول"],
+          ["max_length", "حداکثر طول"],
+        ]
+      : question.question_type === "multiple_choice"
+        ? [
+            ["min_choices", "حداقل انتخاب"],
+            ["max_choices", "حداکثر انتخاب"],
+          ]
+        : [];
+  const update = (key: string, value: any) =>
+    setRules((current) => ({ ...current, [key]: value }));
+  const source = earlier.find((q) => q.id === rules.display_if?.question);
+  const numeric =
+    source && ["number", "rating", "nps"].includes(source.question_type);
+  const triggerOptions =
+    question.question_type === "boolean"
+      ? ["true", "false"]
+      : question.question_type === "nps"
+        ? Array.from({ length: 11 }, (_, i) => String(i))
+        : question.question_type === "rating"
+          ? Array.from(
+              {
+                length: Math.min(
+                  101,
+                  Math.max(0, (rules.max ?? 5) - (rules.min ?? 1) + 1),
+                ),
+              },
+              (_, i) => String(i + (rules.min ?? 1)),
+            )
+          : question.options || [];
+  return (
+    <div className="space-y-4 pt-3">
+      {bounds.map(([key, label]) => (
+        <label key={key} className="block">
+          {label}
+          <input
+            className="border p-2 block"
+            type="number"
+            value={(rules as any)[key] ?? ""}
+            onChange={(e) =>
+              update(
+                key,
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
+            }
+          />
+        </label>
+      ))}
+      {question.question_type === "matrix" &&
+        ["rows", "columns"].map((key) => (
+          <label key={key} className="block">
+            {key === "rows" ? "ردیف‌های ماتریس" : "ستون‌های ماتریس"} (هر مورد یک
+            خط)
+            <textarea
+              className="border p-2 w-full"
+              value={key === "rows" ? matrixRows : matrixColumns}
+              onChange={(e) => {
+                if (key === "rows") setMatrixRows(e.target.value);
+                else setMatrixColumns(e.target.value);
+                update(
+                  key,
+                  e.target.value
+                    .split("\n")
+                    .map((v) => v.trim())
+                    .filter(Boolean),
+                );
+              }}
+            />
+          </label>
+        ))}
+      <div className="border p-3 rounded space-y-2">
+        <label className="block">
+          نمایش شرطی بر اساس سؤال قبلی
+          <select
+            className="border p-2 block w-full"
+            value={rules.display_if?.question || ""}
+            onChange={(e) =>
+              update(
+                "display_if",
+                e.target.value
+                  ? {
+                      question: Number(e.target.value),
+                      operator: "equals",
+                      value: "",
+                    }
+                  : undefined,
+              )
+            }
+          >
+            <option value="">همیشه نمایش داده شود</option>
+            {earlier.map((q) => (
+              <option key={q.id} value={q.id}>
+                {q.question_text}
+              </option>
+            ))}
+          </select>
+        </label>
+        {rules.display_if && (
+          <>
+            <label className="block">
+              شرط
+              <select
+                className="border p-2 block"
+                value={rules.display_if.operator}
+                onChange={(e) =>
+                  update("display_if", {
+                    ...rules.display_if,
+                    operator: e.target.value,
+                  })
+                }
+              >
+                {[
+                  ["equals", "برابر"],
+                  ["not_equals", "نابرابر"],
+                  ["contains", "شامل"],
+                  ["greater_than", "بزرگتر"],
+                  ["less_than", "کوچکتر"],
+                  ["answered", "پاسخ داده شده"],
+                ].map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {rules.display_if.operator !== "answered" &&
+              (source?.question_type === "boolean" ? (
+                <label>
+                  پاسخ
+                  <select
+                    className="border p-2"
+                    value={String(rules.display_if.value)}
+                    onChange={(e) =>
+                      update("display_if", {
+                        ...rules.display_if,
+                        value: e.target.value === "true",
+                      })
+                    }
+                  >
+                    <option value="true">بله</option>
+                    <option value="false">خیر</option>
+                  </select>
+                </label>
+              ) : (
+                <label className="block">
+                  مقدار
+                  <input
+                    className="border p-2 block"
+                    type={numeric ? "number" : "text"}
+                    list={`choices-${question.id}`}
+                    value={String(rules.display_if.value ?? "")}
+                    onChange={(e) =>
+                      update("display_if", {
+                        ...rules.display_if,
+                        value: numeric
+                          ? Number(e.target.value)
+                          : e.target.value,
+                      })
+                    }
+                  />
+                  <datalist id={`choices-${question.id}`}>
+                    {(source?.options || []).map((v) => (
+                      <option key={v} value={v} />
+                    ))}
+                  </datalist>
+                </label>
+              ))}
+          </>
+        )}
+      </div>
+      {["single_choice", "scale", "rating", "nps", "boolean"].includes(
+        question.question_type,
+      ) && (
+        <div className="border p-3 rounded space-y-2">
+          <h3 className="font-semibold">پرش به سؤال بعدی بر اساس پاسخ</h3>
+          {triggerOptions.map((trigger) => (
+            <label key={trigger} className="block">
+              پاسخ {trigger}
+              <select
+                className="border p-2 block w-full"
+                value={rules.jump_to?.[trigger] || ""}
+                onChange={(e) => {
+                  const branches = { ...rules.jump_to };
+                  if (e.target.value)
+                    branches[trigger] = Number(e.target.value);
+                  else delete branches[trigger];
+                  update("jump_to", branches);
+                }}
+              >
+                <option value="">ادامه معمول</option>
+                {later.map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {q.question_text}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
+      )}
+      <button
+        className="border p-2 rounded"
+        onClick={async () => {
+          try {
+            await save(rules);
+            setStatus("ذخیره شد");
+          } catch (e) {
+            setStatus(String(e));
+          }
+        }}
+      >
+        ذخیره تنظیمات و منطق
+      </button>
+      <p role="status">{status}</p>
+    </div>
+  );
+}

@@ -8,7 +8,6 @@
   --background-end-rgb: 255, 255, 255;
 }
 
-
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
@@ -25,8 +24,17 @@ body {
   }
 }
 
-
-button:disabled { opacity: .45; cursor: not-allowed; }
-input, textarea, select { color: #111827; background: white; }
-:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
-
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+input,
+textarea,
+select {
+  color: #111827;
+  background: white;
+}
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

@@ -1,21 +1,31 @@
-import React from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React from "react";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 interface ChartComponentProps {
   data: any[];
-  type?: 'line' | 'bar';
+  type?: "line" | "bar";
   dataKey: string;
   xKey: string;
 }
 
 export const ChartComponent: React.FC<ChartComponentProps> = ({
   data,
-  type = 'line',
+  type = "line",
   dataKey,
   xKey,
 }) => {
-  const Chart = type === 'line' ? LineChart : BarChart;
-
+  const Chart = type === "line" ? LineChart : BarChart;
 
   return (
     <ResponsiveContainer width="100%" height={400}>
@@ -25,10 +35,12 @@ export const ChartComponent: React.FC<ChartComponentProps> = ({
         <YAxis />
         <Tooltip />
         <Legend />
-        {type === "line" ? <Line type="monotone" dataKey={dataKey} stroke="#3b82f6" /> : <Bar dataKey={dataKey} fill="#3b82f6" />}
+        {type === "line" ? (
+          <Line type="monotone" dataKey={dataKey} stroke="#3b82f6" />
+        ) : (
+          <Bar dataKey={dataKey} fill="#3b82f6" />
+        )}
       </Chart>
     </ResponsiveContainer>
   );
 };
-
-
