@@ -293,6 +293,13 @@ export function SurveyRunner({
                   </label>
                   <AnswerInput
                     q={q}
+                    shuffleSeed={
+                      survey.settings?.randomize_options
+                        ? preview
+                          ? "preview"
+                          : responseId
+                        : undefined
+                    }
                     value={answers[q.id]}
                     onChange={(value) =>
                       setAnswers({ ...answers, [q.id]: value })
@@ -352,8 +359,10 @@ function AnswerInput({
   q,
   value,
   onChange,
+  shuffleSeed,
 }: {
   q: Question;
+  shuffleSeed?: string;
   value: any;
   onChange: (v: any) => void;
 }) {
@@ -433,7 +442,10 @@ function AnswerInput({
           },
           (_, i) => String(i + (q.question_type === "nps" ? 0 : (r.min ?? 1))),
         )
-      : q.options;
+      : shuffleSeed &&
+          ["single_choice", "multiple_choice"].includes(q.question_type)
+        ? shuffleOptions(q.options, `${shuffleSeed}:${q.id}`)
+        : q.options;
     return (
       <div
         role="group"
@@ -526,4 +538,16 @@ function AnswerInput({
       این نوع سؤال پشتیبانی نمی‌شود.
     </p>
   );
+}
+function shuffleOptions(options: string[], seed: string) {
+  let state = 2166136261;
+  for (let i = 0; i < seed.length; i++)
+    state = Math.imul(state ^ seed.charCodeAt(i), 16777619) >>> 0;
+  const shuffled = [...options];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    const j = state % (i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }

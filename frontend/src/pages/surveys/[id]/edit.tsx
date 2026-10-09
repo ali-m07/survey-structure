@@ -233,6 +233,23 @@ export default function Builder() {
                   />
                 </label>
               ))}
+              <label className="block">
+                <input
+                  type="checkbox"
+                  checked={!!survey.settings?.randomize_options}
+                  onChange={(e) =>
+                    action(() =>
+                      patch("surveys", survey.id, {
+                        settings: {
+                          ...survey.settings,
+                          randomize_options: e.target.checked,
+                        },
+                      }),
+                    )
+                  }
+                />{" "}
+                ترتیب تصادفی گزینه‌های تک انتخابی و چند انتخابی
+              </label>{" "}
             </section>
             {survey.sections.map((section, si) => (
               <section
@@ -481,6 +498,13 @@ export default function Builder() {
     </main>
   );
 }
+function conditionDefault(question?: Question) {
+  return question?.question_type === "boolean"
+    ? true
+    : question && ["number", "rating", "nps"].includes(question.question_type)
+      ? 0
+      : question?.options?.[0] || "";
+}
 function localDateTime(value: string) {
   const date = new Date(value);
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
@@ -597,7 +621,9 @@ function RuleEditor({
                   ? {
                       question: Number(e.target.value),
                       operator: "equals",
-                      value: "",
+                      value: conditionDefault(
+                        earlier.find((q) => q.id === Number(e.target.value)),
+                      ),
                     }
                   : undefined,
               )

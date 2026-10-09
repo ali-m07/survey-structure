@@ -11,7 +11,10 @@ export function useAuth() {
       return;
     }
     try {
-      setUser(await apiClient.get(`${SURVEY_API}/auth/me/`));
+      const data = await apiClient.get<{ user: unknown }>(
+        `${SURVEY_API}/auth/me/`,
+      );
+      setUser(data.user);
     } catch {
       localStorage.removeItem("token");
       setUser(null);
