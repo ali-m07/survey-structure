@@ -68,7 +68,8 @@ services:
       context: .
       dockerfile: deployment/web.Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8003}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL-http://localhost:8003}
+        API_PROXY_URL: http://api:8003
     restart: unless-stopped
     ports:
       - '127.0.0.1:${WEB_PORT:-3000}:3000'
@@ -100,4 +101,5 @@ volumes:
   survey_media:
   survey_tls:
   survey_proxy_config:
+
 
