@@ -1,0 +1,63 @@
+.content {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+.content p {
+  margin: 0 0 0.65em;
+}
+.content h2 {
+  font-size: 1.45em;
+}
+.content h3 {
+  font-size: 1.25em;
+}
+.content h4 {
+  font-size: 1.1em;
+}
+.content ul {
+  list-style: disc;
+  padding-inline-start: 1.5em;
+}
+.content ol {
+  list-style: decimal;
+  padding-inline-start: 1.5em;
+}
+.content blockquote {
+  border-inline-start: 1px solid #94729f;
+  padding-inline-start: 1em;
+}
+.content :last-child {
+  margin-bottom: 0;
+}
+
+.content {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.content th,
+.content td {
+  border: 1px solid #d8cadc;
+  padding: 0.5em;
+  overflow-wrap: anywhere;
+}
+.content a {
+  color: #694278;
+  text-decoration: underline;
+}
+.content pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.content code {
+  font-family: monospace;
+}
+.content hr {
+  border: 0;
+  border-top: 1px solid #d8cadc;
+  margin: 1em 0;
+}

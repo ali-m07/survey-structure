@@ -152,5 +152,7 @@
     "questionNumber": "Question {{number}}",
     "questionCount_one": "{{count}} question",
     "questionCount_other": "{{count}} questions"
-  }
+  },
+  "npsLow": "Not at all likely",
+  "npsHigh": "Extremely likely"
 }

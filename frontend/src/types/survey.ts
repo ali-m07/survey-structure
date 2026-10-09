@@ -14,6 +14,7 @@ export interface Question {
   id: number;
   section: number;
   question_text: string;
+  question_html?: string;
   question_type: string;
   is_required: boolean;
   order: number;

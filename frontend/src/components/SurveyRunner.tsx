@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useMemo, useState } from "react";
 import { Survey, Question } from "../types/survey";
 import { apiClient, SURVEY_API } from "../services/api";
+import QuestionContent from "./QuestionContent";
 type Answers = Record<string, any>;
 function present(v: any) {
   return (
@@ -297,17 +298,15 @@ export function SurveyRunner({
               <p>{current.description}</p>
               {current.questions.map((q) => (
                 <div key={q.id} className="space-y-2">
-                  <label className="font-semibold block" id={`label-${q.id}`}>
-                    {q.question_text.replace(/\{\{(\d+)\}\}/g, (_, id) =>
-                      Array.isArray(visibleAnswers[id])
-                        ? visibleAnswers[id].join("، ")
-                        : typeof visibleAnswers[id] === "object"
-                          ? ""
-                          : String(visibleAnswers[id] ?? ""),
-                    )}
+                  <div className="font-semibold block" id={`label-${q.id}`}>
+                    <QuestionContent
+                      text={q.question_text}
+                      html={q.question_html}
+                      answers={visibleAnswers}
+                    />
                     {q.is_required && <span className="text-red-700"> *</span>}
-                  </label>
-                  <AnswerInput
+                  </div>
+                  <QuestionAnswerInput
                     q={q}
                     shuffleSeed={
                       survey.settings?.randomize_options
@@ -372,21 +371,24 @@ export function SurveyRunner({
     </section>
   );
 }
-function AnswerInput({
+export function QuestionAnswerInput({
   q,
   value,
   onChange,
   shuffleSeed,
+  inputId,
 }: {
   q: Question;
+  inputId?: string;
   shuffleSeed?: string;
   value: any;
   onChange: (v: any) => void;
 }) {
   const { t } = useTranslation("survey");
   const r = q.validation_rules || {};
+  const identity = inputId || String(q.id);
   const common = {
-    "aria-labelledby": `label-${q.id}`,
+    "aria-labelledby": `label-${identity}`,
     className: "border p-3 rounded w-full",
   };
   if (q.question_type === "text")
@@ -420,7 +422,7 @@ function AnswerInput({
     return (
       <div
         role="group"
-        aria-labelledby={`label-${q.id}`}
+        aria-labelledby={`label-${identity}`}
         className="flex gap-4"
       >
         {[
@@ -430,7 +432,7 @@ function AnswerInput({
           <label key={String(v)}>
             <input
               type="radio"
-              name={`q-${q.id}`}
+              name={`q-${identity}`}
               checked={value === v}
               onChange={() => onChange(v)}
             />{" "}
@@ -467,16 +469,20 @@ function AnswerInput({
     return (
       <div
         role="group"
-        aria-labelledby={`label-${q.id}`}
+        aria-labelledby={`label-${identity}`}
         className="flex flex-wrap gap-3"
       >
         {options.map((option) => (
-          <label key={option} className="border rounded p-3">
+          <label
+            key={option}
+            className={`border rounded p-3 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-purple-600 ${numeric ? "min-w-11 text-center" : ""} ${value === (numeric ? Number(option) : option) ? "bg-purple-100 border-purple-700" : "bg-white"}`}
+          >
             <input
               type={
                 q.question_type === "multiple_choice" ? "checkbox" : "radio"
               }
-              name={`q-${q.id}`}
+              name={`q-${identity}`}
+              className={numeric ? "sr-only" : ""}
               checked={
                 q.question_type === "multiple_choice"
                   ? (value || []).includes(option)
@@ -494,9 +500,15 @@ function AnswerInput({
                 )
               }
             />{" "}
-            {option}
+            <span>{option}</span>
           </label>
         ))}
+        {q.question_type === "nps" && (
+          <div className="basis-full flex justify-between text-sm text-gray-600">
+            <span>{t("npsLow")}</span>
+            <span>{t("npsHigh")}</span>
+          </div>
+        )}
       </div>
     );
   }

@@ -152,5 +152,7 @@
     "questionNumber": "سؤال {{number}}",
     "questionCount_one": "{{count}} سؤال",
     "questionCount_other": "{{count}} سؤال"
-  }
+  },
+  "npsLow": "اصلاً احتمال ندارد",
+  "npsHigh": "بسیار محتمل است"
 }
