@@ -51,6 +51,7 @@ def validate_structure(survey):
             source = condition.get('question')
             if not isinstance(source,int) or isinstance(source,bool) or source not in positions or positions[source] >= positions[q.id] or condition.get('operator') not in OPERATORS:
                 raise ValidationError('Display conditions must refer to an earlier question and supported operator.')
+        if rules.get('jump_to') and q.question_type not in ('single_choice','scale','boolean','number','rating','nps','date','text','email'): raise ValidationError('Branch triggers require scalar answers.')
         for target in rules.get('jump_to', {}).values():
             if not isinstance(target,int) or isinstance(target,bool) or target not in positions or positions[target] <= positions[q.id]:
                 raise ValidationError('Branch targets must refer to a later question.')

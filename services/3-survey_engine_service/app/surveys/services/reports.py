@@ -1,4 +1,4 @@
-import csv, io, json
+import csv, io, json, re
 from collections import Counter
 from django.http import HttpResponse
 from app.surveys.services.validation import questions
@@ -27,6 +27,10 @@ def analytics(survey, params):
                 dist[json.dumps(item,ensure_ascii=False) if isinstance(item,dict) else str(item)] += 1
         item = {'id':q.id,'text':q.question_text,'type':q.question_type,'count':len(values),'distribution':dict(dist)}
         nums = [v for v in values if isinstance(v,(float,int)) and not isinstance(v,bool)]
+        if q.question_type=='text':
+            stop={'the','and','a','an','to','of','in','is','it','for','on','with','this','that','از','به','در','و','که','این','را','با','برای','یک','است','هم','بود','من'}
+            words=Counter(word.casefold() for value in values if isinstance(value,str) for word in re.findall(r'[^\W\d_]+',value,flags=re.UNICODE) if len(word)>1 and word.casefold() not in stop)
+            item['text_insights']={'method':'keyword_frequency','keywords':[{'word':word,'count':count} for word,count in words.most_common(20)]}
         if nums: item['average'] = sum(nums)/len(nums)
         if q.question_type == 'nps' and nums: item['nps'] = 100*(sum(v>=9 for v in nums)-sum(v<=6 for v in nums))/len(nums)
         result.append(item)
