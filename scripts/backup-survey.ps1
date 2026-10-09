@@ -4,7 +4,7 @@ Set-Location (Split-Path $PSScriptRoot -Parent)
 New-Item -ItemType Directory -Force $Destination | Out-Null
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $file = Join-Path (Resolve-Path $Destination) "survey-$stamp.dump"
-$compose = @('compose','--env-file',$EnvironmentFile,'-f','docker-compose.survey.yml')
+$compose = @('compose','--env-file',$EnvironmentFile,'-f','docker-compose.yml')
 & docker @compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /tmp/survey-backup.dump'
 if ($LASTEXITCODE) { throw 'Database backup failed' }
 $id = & docker @compose ps -q postgres

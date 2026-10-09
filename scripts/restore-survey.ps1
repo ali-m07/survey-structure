@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)
 if (!$ConfirmOverwrite) { throw 'Restore overwrites the database. Add -ConfirmOverwrite after checking the backup and target environment.' }
 $resolvedBackup = (Resolve-Path -LiteralPath $BackupFile).Path
-$compose = @('compose','--env-file',$EnvironmentFile,'-f','docker-compose.survey.yml')
+$compose = @('compose','--env-file',$EnvironmentFile,'-f','docker-compose.yml')
 & docker @compose stop api web jobs
 if ($LASTEXITCODE) { throw 'Could not stop application before restore' }
 $id = & docker @compose ps -q postgres

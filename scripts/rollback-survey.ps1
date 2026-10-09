@@ -7,7 +7,7 @@ foreach ($image in @("survey-api:$ReleaseTag", "survey-web:$ReleaseTag")) {
     & docker image inspect $image --format '{{.Id}}' | Out-Null
     if ($LASTEXITCODE) { throw "Previous image missing: $image" }
 }
-& docker compose --env-file $EnvironmentFile -f docker-compose.survey.yml up -d --no-deps --no-build api web jobs
+& docker compose --env-file $EnvironmentFile -f docker-compose.yml up -d --no-deps --no-build api web jobs
 if ($LASTEXITCODE) { throw 'Rollback failed' }
 Write-Host 'Application rollback completed. Database migrations are not reversed. Run health checks and confirm schema compatibility.'
 

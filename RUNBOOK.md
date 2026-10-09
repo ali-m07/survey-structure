@@ -22,7 +22,7 @@ Remove-Item Env:SURVEY_ADMIN_PASSWORD
 
 ## فاز اجرا ۲: Docker یکپارچه
 
-Docker Desktop با Linux containers باید روشن باشد. فایل جدید compose مستقل از زیرساخت بزرگ قبلی است. دیتابیس به میزبان منتشر نمی‌شود و داده روی volume باقی می‌ماند. گرافانای زیرساخت قبلی به پورت 3001 منتقل شده است.
+Docker Desktop با Linux containers باید روشن باشد. فایل docker-compose.yml مرجع واحد اجرای برنامه است. دیتابیس به میزبان منتشر نمی‌شود و داده روی volume باقی می‌ماند. این فایل واحد، PostgreSQL، migration، API، وب، worker و پروکسی اختیاری HTTPS را مدیریت می‌کند.
 
 ```powershell
 Copy-Item deployment/.env.local.example deployment/.env.local
@@ -31,16 +31,16 @@ Copy-Item deployment/.env.local.example deployment/.env.local
 دو مقدار `DATABASE_PASSWORD` و `SECRET_KEY` را با رشته‌های تصادفی طولانی پر کنید. فایل محیط واقعی در Git ثبت نمی‌شود. سپس:
 
 ```powershell
-docker compose --env-file deployment/.env.local -f docker-compose.survey.yml config --quiet
-docker compose --env-file deployment/.env.local -f docker-compose.survey.yml up -d --build
-docker compose --env-file deployment/.env.local -f docker-compose.survey.yml ps
-docker compose --env-file deployment/.env.local -f docker-compose.survey.yml logs --tail 100 api web migrate
+docker compose --env-file deployment/.env.local -f docker-compose.yml config --quiet
+docker compose --env-file deployment/.env.local -f docker-compose.yml up -d --build
+docker compose --env-file deployment/.env.local -f docker-compose.yml ps
+docker compose --env-file deployment/.env.local -f docker-compose.yml logs --tail 100 api web migrate
 ```
 
 ابتدا postgres سالم می‌شود، سپس migration اجرا می‌شود و بعد API، وب و worker پس‌زمینه شروع می‌شوند. سرویس `jobs` هر ۳۰ ثانیه صف webhook و یادآوری‌های فعال را بررسی می‌کند؛ شکست ارسال در logs و مدل تلاش‌ها قابل مشاهده است. یادآوری فقط با `reminders_enabled` و بعد از دعوت موفق فعال می‌شود. ایجاد مدیر داخل کانتینر:
 
 ```powershell
-docker compose --env-file deployment/.env.local -f docker-compose.survey.yml exec -e ADMIN_PASSWORD api python manage.py bootstrap_survey_admin --username admin --tenant default
+docker compose --env-file deployment/.env.local -f docker-compose.yml exec -e ADMIN_PASSWORD api python manage.py bootstrap_survey_admin --username admin --tenant default
 ```
 
 برای ساخت مدیر نخست `ADMIN_PASSWORD` یا `--password` لازم است؛ رمز حداقل ۱۰ کاراکتر انتخاب کنید. دستور زیر متغیر را به کانتینر منتقل می‌کند و آن را در Git ثبت نمی‌کند.
@@ -54,7 +54,7 @@ docker compose --env-file deployment/.env.local -f docker-compose.survey.yml exe
 `NEXT_PUBLIC_API_URL` خالی یعنی درخواست مرورگر به دامنه جاری؛ این مقدار زمان build ثابت می‌شود. بعد از تغییر آن وب را دوباره build کنید.
 
 ```powershell
-docker compose --env-file deployment/.env.staging -f docker-compose.survey.yml --profile tls up -d --build
+docker compose --env-file deployment/.env.staging -f docker-compose.yml --profile tls up -d --build
 ```
 
 بررسی پذیرش: ورود مدیر، ساخت پرسشنامه، پیش‌نمایش، انتشار، ثبت پاسخ عمومی، گزارش، بسته‌شدن و جلوگیری از پاسخ جدید. دعوت ایمیل فقط پس از تنظیم SMTP واقعی بررسی شود. دامنه و سرور مقصد هنوز انتخاب نشده‌اند؛ این راهنما به معنی استقرار واقعی روی اینترنت نیست.
@@ -75,11 +75,23 @@ docker compose --env-file deployment/.env.staging -f docker-compose.survey.yml -
 
 ```powershell
 Invoke-RestMethod http://localhost:8003/health
-docker compose --env-file deployment/.env.production -f docker-compose.survey.yml ps
-docker compose --env-file deployment/.env.production -f docker-compose.survey.yml logs --tail 100 api web
+docker compose --env-file deployment/.env.production -f docker-compose.yml ps
+docker compose --env-file deployment/.env.production -f docker-compose.yml logs --tail 100 api web
 ```
 
 healthcheck API سلامت HTTP فرایند را نشان می‌دهد؛ به تنهایی صحت SMTP، دیتابیس یا کل چرخه پرسشنامه را اثبات نمی‌کند. برای مانیتورینگ عملیاتی بررسی دوره‌ای چرخه پاسخ و سلامت دیتابیس اضافه کنید. فایل‌های محیط، logs و بکاپ‌ها نباید عمومی شوند.
 
 
 
+
+## ساخت چندمرحله‌ای تصاویر
+
+API دو مرحله دارد: نصب وابستگی‌ها در محیط Python جدا، سپس انتقال همان محیط به تصویر اجرای غیر root. وب سه مرحله دارد: نصب وابستگی‌ها، ساخت Next.js و اجرای خروجی standalone با کاربر node. تصویر اجرای وب فقط فایل‌های لازم برای server، صفحات، فایل‌های static و public را دریافت می‌کند.
+
+اجرای همه سرویس‌های محصول از ریشه پروژه:
+
+```powershell
+docker compose --env-file deployment/.env.local up -d --build
+```
+
+نام پروژه survey-platform و volumeهای قبلی حفظ می‌شوند. migration قبل از API اجرا می‌شود و worker و وب پس از سلامت API شروع می‌شوند. برای HTTPS از همان فایل با --profile tls استفاده کنید.

@@ -8,7 +8,7 @@ on:
       - 'frontend/**'
       - 'services/3-survey_engine_service/**'
       - 'deployment/**'
-      - 'docker-compose.survey.yml'
+      - 'docker-compose.yml'
       - '.github/workflows/survey-platform.yml'
 
 permissions:

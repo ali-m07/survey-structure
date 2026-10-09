@@ -19,9 +19,9 @@
 - `frontend/`: رابط مدیریت، سازنده و پاسخ‌دهنده.
 - `services/3-survey_engine_service/`: مدل‌ها، دسترسی، API و منطق پرسشنامه.
 - `scripts/`: راه‌اندازی محلی.
-- `deployment/` و `docker-compose.survey.yml`: اجرای مستقل محصول.
+- `deployment/` و `docker-compose.yml`: اجرای مستقل محصول.
 - `.github/workflows/survey-platform.yml`: بررسی API و ساخت رابط.
-- سایر `services/` و فایل `docker-compose.yml`: ساختار پلتفرم بزرگ‌تر اولیه؛ برای اجرای پایه پرسشنامه‌ساز همگی لازم نیستند.
+- سایر `services/` : ساختار پلتفرم بزرگ‌تر اولیه؛ برای اجرای پایه پرسشنامه‌ساز همگی لازم نیستند.
 
 ## شروع و راه‌اندازی
 
