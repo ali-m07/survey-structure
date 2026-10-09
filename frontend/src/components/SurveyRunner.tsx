@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useMemo, useState } from "react";
 import { Survey, Question } from "../types/survey";
 import { apiClient, SURVEY_API } from "../services/api";
@@ -63,32 +64,38 @@ export function activeQuestions(survey: Survey, answers: Answers) {
   }
   return result;
 }
-function validate(q: Question, value: any) {
+function validate(
+  q: Question,
+  value: any,
+  t: (key: string, options?: any) => string,
+) {
   const r = q.validation_rules || {};
-  if (!present(value)) return q.is_required ? "پاسخ الزامی است" : "";
+  if (!present(value)) return q.is_required ? t("requiredAnswer") : "";
   if (["number", "rating", "nps"].includes(q.question_type)) {
-    if (!Number.isFinite(Number(value))) return "عدد معتبر وارد کنید";
+    if (!Number.isFinite(Number(value))) return t("validNumber");
     const min = q.question_type === "nps" ? 0 : r.min;
     const max = q.question_type === "nps" ? 10 : r.max;
-    if (min !== undefined && Number(value) < min) return `حداقل ${min}`;
-    if (max !== undefined && Number(value) > max) return `حداکثر ${max}`;
+    if (min !== undefined && Number(value) < min)
+      return t("minimum", { value: min });
+    if (max !== undefined && Number(value) > max)
+      return t("maximum", { value: max });
   }
   if (q.question_type === "text" || q.question_type === "email") {
     if (r.min_length && String(value).length < r.min_length)
-      return `حداقل ${r.min_length} حرف`;
+      return t("minimumLength", { value: r.min_length });
     if (r.max_length && String(value).length > r.max_length)
-      return `حداکثر ${r.max_length} حرف`;
+      return t("maximumLength", { value: r.max_length });
     if (
       q.question_type === "email" &&
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
     )
-      return "ایمیل معتبر وارد کنید";
+      return t("validEmail");
   }
   if (q.question_type === "multiple_choice") {
     if (r.min_choices && value.length < r.min_choices)
-      return `حداقل ${r.min_choices} انتخاب`;
+      return t("minimumSelections", { value: r.min_choices });
     if (r.max_choices && value.length > r.max_choices)
-      return `حداکثر ${r.max_choices} انتخاب`;
+      return t("maximumSelections", { value: r.max_choices });
   }
   if (
     q.question_type === "ranking" &&
@@ -97,12 +104,12 @@ function validate(q: Question, value: any) {
       new Set(value).size !== value.length ||
       value.some((item) => !q.options.includes(item)))
   )
-    return "تمام گزینه‌ها را رتبه بندی کنید";
+    return t("rankAll");
   if (
     q.question_type === "matrix" &&
     (r.rows || []).some((row) => !value?.[row])
   )
-    return "برای تمام ردیف‌ها پاسخ انتخاب کنید";
+    return t("matrixAll");
   return "";
 }
 export function SurveyRunner({
@@ -114,6 +121,7 @@ export function SurveyRunner({
   preview?: boolean;
   token?: string;
 }) {
+  const { t } = useTranslation("survey");
   const [answers, setAnswers] = useState<Answers>({});
   const [page, setPage] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -155,7 +163,7 @@ export function SurveyRunner({
           }),
         );
       } catch {
-        setError("ذخیره موقت در این مرورگر در دسترس نیست.");
+        setError(t("storage"));
       }
     }
   }, [answers, page, ready, done, responseId, key, preview]);
@@ -172,12 +180,14 @@ export function SurveyRunner({
       questions: s.questions.filter((q) => visible.some((v) => v.id === q.id)),
     }))
     .filter((s) => s.questions.length);
-  const current = sections[Math.min(page, Math.max(0, sections.length - 1))];
-  const rtl = survey.settings?.language !== "en";
+  const currentPage = Math.min(page, Math.max(0, sections.length - 1));
+  const current = sections[currentPage];
+  const contentLanguage = survey.settings?.language || "fa";
+  const rtl = contentLanguage === "fa";
   const check = (questions: Question[]) => {
     const found: Record<string, string> = {};
     questions.forEach((q) => {
-      const message = validate(q, answers[q.id]);
+      const message = validate(q, answers[q.id], t);
       if (message) found[q.id] = message;
     });
     setErrors(found);
@@ -185,9 +195,9 @@ export function SurveyRunner({
   };
   const submit = async () => {
     if (!check(visible)) {
-      setError("پاسخ‌های مشخص شده را بررسی کنید.");
+      setError(t("checkAnswers"));
       const invalid = sections.findIndex((s) =>
-        s.questions.some((q) => validate(q, answers[q.id])),
+        s.questions.some((q) => validate(q, answers[q.id], t)),
       );
       if (invalid >= 0) setPage(invalid);
       return;
@@ -222,9 +232,9 @@ export function SurveyRunner({
         className="bg-white p-8 rounded shadow text-center space-y-4"
       >
         <h1 className="text-2xl font-bold">
-          {preview ? "پیش‌نمایش کامل شد" : "پاسخ شما ثبت شد"}
+          {preview ? t("previewDone") : t("submitted")}
         </h1>
-        <p>از مشارکت شما سپاسگزاریم.</p>
+        <p>{t("thanks")}</p>
         {(preview || survey.settings?.allow_multiple) && (
           <button
             className="border p-3 rounded"
@@ -235,7 +245,7 @@ export function SurveyRunner({
               setResponseId(crypto.randomUUID());
             }}
           >
-            شروع دوباره
+            {t("restart")}
           </button>
         )}
       </section>
@@ -243,27 +253,27 @@ export function SurveyRunner({
   return (
     <section
       dir={rtl ? "rtl" : "ltr"}
-      lang={rtl ? "fa" : "en"}
+      lang={contentLanguage}
       className="bg-white p-4 md:p-8 rounded shadow space-y-6"
     >
       <h1 className="text-2xl font-bold">{survey.title}</h1>
       <p className="whitespace-pre-wrap">{survey.description}</p>
       {preview ? (
-        <p className="bg-yellow-50 p-3">پیش‌نمایش؛ پاسخ ذخیره نمی‌شود.</p>
+        <p className="bg-yellow-50 p-3">{t("previewNotice")}</p>
       ) : (
-        <p className="text-sm text-gray-600">
-          پاسخ موقت روی همین مرورگر ذخیره می‌شود؛ برای ادامه از همین لینک
-          استفاده کنید. در دستگاه مشترک پس از پاسخ، داده موقت را پاک کنید.
-        </p>
+        <p className="text-sm text-gray-600">{t("draftNotice")}</p>
       )}
       <div>
         <progress
           className="w-full"
           max={Math.max(1, sections.length)}
-          value={page + 1}
+          value={currentPage + 1}
         />
         <p>
-          بخش {Math.min(page + 1, sections.length)} از {sections.length}
+          {t("progress", {
+            current: Math.min(currentPage + 1, sections.length),
+            total: sections.length,
+          })}
         </p>
       </div>
       {error && (
@@ -274,12 +284,13 @@ export function SurveyRunner({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (page < sections.length - 1) {
-            if (current && check(current.questions)) setPage(page + 1);
+          if (currentPage < sections.length - 1) {
+            if (current && check(current.questions)) setPage(currentPage + 1);
           } else submit();
         }}
       >
         <fieldset disabled={busy} className="space-y-6">
+          {!current && <p role="status">{t("noVisibleQuestions")}</p>}
           {current && (
             <>
               <h2 className="text-xl font-bold">{current.title}</h2>
@@ -322,28 +333,29 @@ export function SurveyRunner({
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              disabled={page === 0}
+              disabled={currentPage === 0}
               className="border p-3 rounded"
-              onClick={() => setPage(Math.max(0, page - 1))}
+              onClick={() => setPage(Math.max(0, currentPage - 1))}
             >
-              قبلی
+              {t("previous")}
             </button>
             <button
               type="submit"
+              disabled={!visible.length}
               className="bg-blue-600 text-white p-3 rounded"
             >
               {busy
-                ? "در حال ارسال…"
-                : page < sections.length - 1
-                  ? "بعدی"
-                  : "ثبت پاسخ"}
+                ? t("submitting")
+                : currentPage < sections.length - 1
+                  ? t("next")
+                  : t("submit")}
             </button>
             {!preview && (
               <button
                 type="button"
                 className="border p-3 rounded"
                 onClick={() => {
-                  if (confirm("پاسخ‌های موقت پاک شوند؟")) {
+                  if (confirm(t("clearConfirm"))) {
                     setAnswers({});
                     setPage(0);
                     setResponseId(crypto.randomUUID());
@@ -351,7 +363,7 @@ export function SurveyRunner({
                   }
                 }}
               >
-                پاک کردن پاسخ موقت
+                {t("clearDraft")}
               </button>
             )}
           </div>
@@ -371,6 +383,7 @@ function AnswerInput({
   value: any;
   onChange: (v: any) => void;
 }) {
+  const { t } = useTranslation("survey");
   const r = q.validation_rules || {};
   const common = {
     "aria-labelledby": `label-${q.id}`,
@@ -411,8 +424,8 @@ function AnswerInput({
         className="flex gap-4"
       >
         {[
-          [true, "بله"],
-          [false, "خیر"],
+          [true, t("yes")],
+          [false, t("no")],
         ].map(([v, label]) => (
           <label key={String(v)}>
             <input
@@ -498,7 +511,7 @@ function AnswerInput({
               value={value?.[row] || ""}
               onChange={(e) => onChange({ ...value, [row]: e.target.value })}
             >
-              <option value="">انتخاب کنید</option>
+              <option value="">{t("select")}</option>
               {(r.columns || q.options).map((column) => (
                 <option key={column}>{column}</option>
               ))}
@@ -513,7 +526,7 @@ function AnswerInput({
       <div className="space-y-2">
         {q.options.map((_, i) => (
           <label key={i} className="block">
-            رتبه {i + 1}
+            {t("rank", { number: i + 1 })}
             <select
               {...common}
               value={selected[i] || ""}
@@ -523,7 +536,7 @@ function AnswerInput({
                 onChange(next);
               }}
             >
-              <option value="">انتخاب کنید</option>
+              <option value="">{t("select")}</option>
               {q.options
                 .filter(
                   (option) =>
@@ -540,7 +553,7 @@ function AnswerInput({
   }
   return (
     <p role="alert" className="text-red-700">
-      این نوع سؤال پشتیبانی نمی‌شود.
+      {t("unsupported")}
     </p>
   );
 }

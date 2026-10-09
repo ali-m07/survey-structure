@@ -1,9 +1,14 @@
+import { useLocale } from "../../i18n/LocaleProvider";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { apiClient, SURVEY_API } from "../../services/api";
 import { Survey } from "../../types/survey";
 import { SurveyRunner } from "../../components/SurveyRunner";
 export default function PublicSurvey() {
+  const { t } = useTranslation("survey");
+  const { direction } = useLocale();
   const router = useRouter();
   const [survey, setSurvey] = useState<Survey>();
   const [error, setError] = useState("");
@@ -30,8 +35,11 @@ export default function PublicSurvey() {
     };
   }, [router.isReady, router.query.id, token]);
   return (
-    <main className="min-h-screen bg-blue-50 p-4 md:p-8">
+    <main dir={direction} className="min-h-screen bg-blue-50 p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
+        <div className="flex justify-end mb-4">
+          <LanguageSwitcher />
+        </div>
         {survey ? (
           <SurveyRunner
             key={`${survey.id}:${token || ""}`}
@@ -39,8 +47,8 @@ export default function PublicSurvey() {
             token={token}
           />
         ) : (
-          <p dir="rtl" role="status" className="bg-white p-6 rounded">
-            {error || "در حال دریافت پرسشنامه…"}
+          <p dir={direction} role="status" className="bg-white p-6 rounded">
+            {error || t("loadingSurvey")}
           </p>
         )}
       </div>

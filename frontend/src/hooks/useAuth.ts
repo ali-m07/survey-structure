@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   createContext,
   createElement,
@@ -35,6 +36,7 @@ type AuthState = {
 const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { t } = useTranslation("scene");
   const [user, setUser] = useState<User | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [tenant, setTenant] = useState<string | null>(null);
@@ -84,8 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username,
         password,
       });
-      if (!data.token)
-        throw new Error("پاسخ ورود معتبر نیست. دوباره تلاش کنید.");
+      if (!data.token) throw new Error(t("session.invalidResponse"));
       localStorage.setItem("token", data.token);
       apply(data);
       setLoading(false);

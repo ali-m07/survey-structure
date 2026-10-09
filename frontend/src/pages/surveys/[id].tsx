@@ -1,3 +1,6 @@
+import Head from "next/head";
+import { useTranslation } from "react-i18next";
+import { useLocale } from "../../i18n/LocaleProvider";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -6,6 +9,8 @@ import { Survey } from "../../types/survey";
 import { useAuth } from "../../hooks/useAuth";
 import { Webhooks } from "../../components/Webhooks";
 export default function ManageSurvey() {
+  const { t } = useTranslation("app");
+  const { locale, direction } = useLocale();
   const router = useRouter();
   const auth = useAuth();
   const id = router.query.id;
@@ -27,7 +32,7 @@ export default function ManageSurvey() {
         : [];
       setParticipants(Array.isArray(list) ? list : list.results || []);
     } catch (e) {
-      setError(String(e));
+      setError(t("common.error"));
     }
   };
   useEffect(() => {
@@ -45,15 +50,16 @@ export default function ManageSurvey() {
       await load();
       return result;
     } catch (e) {
-      setError(String(e));
+      setError(t("common.error"));
     } finally {
       setBusy(false);
     }
   };
   if (!survey)
     return (
-      <main dir="rtl" className="p-8">
-        {error || "در حال دریافت…"} <Link href="/surveys">بازگشت</Link>
+      <main dir={direction} lang={locale} className="p-8">
+        {error ? t("common.error") : t("common.loading")}{" "}
+        <Link href="/surveys">{t("nav.back")}</Link>
       </main>
     );
   const base = `${SURVEY_API}/surveys/${id}`;
@@ -62,29 +68,43 @@ export default function ManageSurvey() {
     ...(end ? { end } : {}),
   }).toString();
   return (
-    <main dir="rtl" className="min-h-screen bg-blue-50 p-4 md:p-8">
+    <main
+      dir={direction}
+      lang={locale}
+      className="min-h-screen bg-blue-50 p-4 md:p-8"
+    >
+      <Head>
+        <title>
+          {survey.title} | {t("brand")}
+        </title>
+      </Head>
       <div className="max-w-5xl mx-auto space-y-6">
         <nav className="flex gap-4">
-          <Link href="/surveys">پرسشنامه‌ها</Link>
+          <Link href="/surveys">{t("nav.surveys")}</Link>
           {auth.canEdit && (
-            <Link href={`/surveys/${id}/edit`}>سازنده و پیش‌نمایش</Link>
+            <Link href={`/surveys/${id}/edit`}>{t("manage.builder")}</Link>
           )}
         </nav>
         <h1 className="text-3xl font-bold">{survey.title}</h1>
         <p>{survey.description}</p>
         <p>
-          وضعیت: {survey.status} · پاسخ‌ها: {survey.submission_count || 0}
+          {t("surveys.summary", {
+            status: t(`status.${survey.status}`, {
+              defaultValue: survey.status,
+            }),
+            count: survey.submission_count || 0,
+          })}
         </p>
         {error && (
           <p role="alert" className="text-red-700 bg-white p-4">
-            {error}
+            {t("common.error")}
           </p>
         )}
         {notice && <p role="status">{notice}</p>}
         <fieldset disabled={busy} className="space-y-6">
           {auth.canEdit && (
             <section className="bg-white rounded shadow p-6 space-y-4">
-              <h2 className="text-xl font-bold">انتشار</h2>
+              <h2 className="text-xl font-bold">{t("manage.publish")}</h2>
               <div className="flex flex-wrap gap-4">
                 {survey.status === "draft" && (
                   <button
@@ -93,18 +113,18 @@ export default function ManageSurvey() {
                       action(() => apiClient.post(`${base}/publish/`, {}))
                     }
                   >
-                    انتشار نسخه ثابت
+                    {t("manage.publishFixed")}
                   </button>
                 )}
                 {survey.status === "active" && (
                   <button
                     className="border p-3 rounded"
                     onClick={() => {
-                      if (confirm("دریافت پاسخ بسته شود؟"))
+                      if (confirm(t("manage.closeConfirm")))
                         action(() => apiClient.post(`${base}/close/`, {}));
                     }}
                   >
-                    بستن پرسشنامه
+                    {t("manage.close")}
                   </button>
                 )}
                 <button
@@ -119,14 +139,14 @@ export default function ManageSurvey() {
                     })
                   }
                 >
-                  ساخت کپی برای ویرایش
+                  {t("manage.duplicate")}
                 </button>
               </div>
               {survey.status === "active" &&
                 !survey.settings?.invitation_only && (
                   <>
                     <label className="block">
-                      لینک پاسخ‌دهی
+                      {t("manage.responseLink")}
                       <input
                         readOnly
                         className="border p-3 rounded w-full"
@@ -139,7 +159,7 @@ export default function ManageSurvey() {
                     </label>
                     <div className="flex gap-4">
                       <Link href={`/survey/${id}`} target="_blank">
-                        باز کردن لینک عمومی
+                        {t("manage.openPublic")}
                       </Link>
                       <button
                         onClick={() =>
@@ -151,22 +171,19 @@ export default function ManageSurvey() {
                           )
                         }
                       >
-                        دریافت QR
+                        {t("manage.qr")}
                       </button>
                     </div>
                   </>
                 )}
               {survey.settings?.invitation_only && (
-                <p>
-                  این پرسشنامه فقط با لینک دعوت اختصاصی باز می‌شود؛ لینک عمومی و
-                  QR برای پاسخ‌دهی کافی نیست.
-                </p>
+                <p>{t("manage.inviteOnly")}</p>
               )}
             </section>
           )}
           {auth.canEdit && (
             <section className="bg-white rounded shadow p-6 space-y-4">
-              <h2 className="text-xl font-bold">دعوت شرکت‌کننده</h2>
+              <h2 className="text-xl font-bold">{t("manage.invite")}</h2>
               <form
                 className="flex flex-wrap gap-3"
                 onSubmit={(e) => {
@@ -182,7 +199,7 @@ export default function ManageSurvey() {
                 }}
               >
                 <label>
-                  ایمیل
+                  {t("manage.email")}
                   <input
                     name="email"
                     type="email"
@@ -191,9 +208,12 @@ export default function ManageSurvey() {
                   />
                 </label>
                 <label>
-                  <input name="anonymous" type="checkbox" /> پاسخ ناشناس
+                  <input name="anonymous" type="checkbox" />{" "}
+                  {t("manage.anonymous")}
                 </label>
-                <button className="border p-3 rounded">ثبت شرکت‌کننده</button>
+                <button className="border p-3 rounded">
+                  {t("manage.addParticipant")}
+                </button>
               </form>
               <div className="space-y-3">
                 {participants.map((p) => (
@@ -201,8 +221,12 @@ export default function ManageSurvey() {
                     <p>
                       {p.email} ·{" "}
                       {p.completed_at
-                        ? "تکمیل شده"
-                        : p.delivery_status || "ثبت شده"}
+                        ? t("manage.completed")
+                        : p.delivery_status
+                          ? t(`status.${p.delivery_status}`, {
+                              defaultValue: p.delivery_status,
+                            })
+                          : t("manage.registered")}
                     </p>
                     <button
                       className="border p-2 rounded"
@@ -212,15 +236,21 @@ export default function ManageSurvey() {
                             `${SURVEY_API}/participants/${p.id}/send_invitation/`,
                             {},
                           );
-                          setNotice(`وضعیت ارسال: ${result.status}`);
+                          setNotice(
+                            t("manage.delivery", {
+                              status: t(`status.${result.status}`, {
+                                defaultValue: result.status,
+                              }),
+                            }),
+                          );
                         })
                       }
                     >
-                      ارسال دعوت / یادآوری
+                      {t("manage.send")}
                     </button>
                     {p.token && (
                       <label className="block text-sm">
-                        لینک اختصاصی
+                        {t("manage.personalLink")}
                         <input
                           className="border p-2 w-full"
                           readOnly
@@ -238,10 +268,10 @@ export default function ManageSurvey() {
             </section>
           )}
           <section className="bg-white rounded shadow p-6 space-y-4">
-            <h2 className="text-xl font-bold">تحلیل پاسخ‌ها</h2>
+            <h2 className="text-xl font-bold">{t("manage.analytics")}</h2>
             <div className="flex flex-wrap gap-3">
               <label>
-                از تاریخ
+                {t("manage.startDate")}
                 <input
                   type="date"
                   value={start}
@@ -250,7 +280,7 @@ export default function ManageSurvey() {
                 />
               </label>
               <label>
-                تا تاریخ
+                {t("manage.endDate")}
                 <input
                   type="date"
                   value={end}
@@ -269,7 +299,7 @@ export default function ManageSurvey() {
                 )
               }
             >
-              دریافت گزارش
+              {t("manage.getReport")}
             </button>
             <div className="flex flex-wrap gap-4">
               {["csv", "xlsx", "pdf"].map((format) => (
@@ -284,26 +314,30 @@ export default function ManageSurvey() {
                     )
                   }
                 >
-                  خروجی {format.toUpperCase()}
+                  {t("manage.export", { format: format.toUpperCase() })}
                 </button>
               ))}
             </div>
             {analytics && (
               <>
-                <p>تعداد پاسخ: {analytics.total_responses}</p>
+                <p>
+                  {t("manage.responseCount", {
+                    count: analytics.total_responses,
+                  })}
+                </p>
                 {analytics.questions.map((q: any) => (
                   <article key={q.id} className="border p-4 rounded">
                     <h3 className="font-bold">{q.text}</h3>
                     <p>
-                      پاسخ: {q.count}
+                      {t("manage.count", { count: q.count })}
                       {q.average !== undefined
-                        ? ` · میانگین: ${q.average}`
+                        ? t("manage.average", { value: q.average })
                         : ""}
                       {q.nps !== undefined ? ` · NPS: ${q.nps}` : ""}
                     </p>
                     {q.keywords && (
                       <p className="text-sm">
-                        واژه‌های پرتکرار:{" "}
+                        {t("manage.keywords")}{" "}
                         {Object.entries(q.keywords)
                           .map(([word, count]) => `${word}: ${count}`)
                           .join(" · ")}
@@ -332,7 +366,7 @@ export default function ManageSurvey() {
             )}
           </section>
           <section className="bg-white p-6 rounded shadow space-y-3">
-            <h2 className="text-xl font-bold">تاریخچه تغییرات</h2>
+            <h2 className="text-xl font-bold">{t("manage.history")}</h2>
             <button
               onClick={() =>
                 action(async () =>
@@ -340,12 +374,18 @@ export default function ManageSurvey() {
                 )
               }
             >
-              دریافت تاریخچه
+              {t("manage.getHistory")}
             </button>
             {history.map((event) => (
               <p key={event.id}>
-                {event.action} ·{" "}
-                {new Date(event.created_at).toLocaleString("fa-IR")}
+                {t(`history.${event.action}`, { defaultValue: event.action })} ·{" "}
+                {new Date(event.created_at).toLocaleString(
+                  locale === "fa"
+                    ? "fa-IR"
+                    : locale === "fr"
+                      ? "fr-FR"
+                      : "en-GB",
+                )}
               </p>
             ))}
           </section>

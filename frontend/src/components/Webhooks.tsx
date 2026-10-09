@@ -1,6 +1,8 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { apiClient, SURVEY_API } from "../services/api";
 export function Webhooks({ surveyId }: { surveyId: number }) {
+  const { t } = useTranslation("survey");
   const [hooks, setHooks] = useState<any[]>([]);
   const [deliveries, setDeliveries] = useState<any[]>([]);
   const [secret, setSecret] = useState("");
@@ -19,11 +21,8 @@ export function Webhooks({ surveyId }: { surveyId: number }) {
   }, [surveyId]);
   return (
     <section className="bg-white p-6 rounded shadow space-y-4">
-      <h2 className="text-xl font-bold">اتصال به سرویس دیگر</h2>
-      <p>
-        پس از ثبت پاسخ، رویداد به آدرس مقصد ارسال می‌شود. وضعیت تلاش‌ها را در
-        این بخش بررسی کنید.
-      </p>
+      <h2 className="text-xl font-bold">{t("hookTitle")}</h2>
+      <p>{t("hookIntro")}</p>
       {error && (
         <p role="alert" className="text-red-700">
           {error}
@@ -31,7 +30,7 @@ export function Webhooks({ surveyId }: { surveyId: number }) {
       )}
       {secret && (
         <p className="bg-yellow-50 p-3 break-all">
-          کلید امضا (فقط هنگام ایجاد نمایش داده می‌شود): {secret}
+          {t("hookSecret")} <bdi>{secret}</bdi>
         </p>
       )}
       <form
@@ -52,7 +51,7 @@ export function Webhooks({ surveyId }: { surveyId: number }) {
         }}
       >
         <label className="grow">
-          آدرس HTTPS مقصد
+          {t("hookUrl")}
           <input
             name="url"
             type="url"
@@ -61,8 +60,9 @@ export function Webhooks({ surveyId }: { surveyId: number }) {
             className="border p-2 block w-full"
           />
         </label>
-        <button className="border p-2">ایجاد اتصال</button>
+        <button className="border p-2">{t("hookCreate")}</button>
       </form>
+      {!hooks.length && <p className="text-gray-600">{t("noHooks")}</p>}
       {hooks.map((hook) => (
         <article key={hook.id} className="border p-3 rounded space-y-2">
           <p className="break-all">{hook.url}</p>
@@ -78,7 +78,7 @@ export function Webhooks({ surveyId }: { surveyId: number }) {
                 }
               }}
             >
-              وضعیت تحویل
+              {t("hookDelivery")}
             </button>
             <button
               onClick={async () => {
@@ -95,12 +95,12 @@ export function Webhooks({ surveyId }: { surveyId: number }) {
                 }
               }}
             >
-              تلاش مجدد تحویل‌های ناموفق
+              {t("hookRetry")}
             </button>
             <button
               className="text-red-700"
               onClick={async () => {
-                if (!confirm("اتصال حذف شود؟")) return;
+                if (!confirm(t("hookDelete"))) return;
                 try {
                   await apiClient.delete(`${SURVEY_API}/webhooks/${hook.id}/`);
                   load();
@@ -109,14 +109,19 @@ export function Webhooks({ surveyId }: { surveyId: number }) {
                 }
               }}
             >
-              حذف
+              {t("delete")}
             </button>
           </div>
         </article>
       ))}
       {deliveries.map((d) => (
         <p key={d.id}>
-          رویداد {d.id} · {d.status} · تلاش‌ها: {d.attempts} {d.error || ""}
+          {t("hookEvent", {
+            id: d.id,
+            status: t(`delivery_${d.status}`, { defaultValue: d.status }),
+            attempts: d.attempts,
+          })}{" "}
+          {d.error || ""}
         </p>
       ))}
     </section>

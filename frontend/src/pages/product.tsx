@@ -1,3 +1,5 @@
+import { useLocale } from "../i18n/LocaleProvider";
+import { useTranslation } from "react-i18next";
 import Head from "next/head";
 import Link from "next/link";
 import {
@@ -8,30 +10,26 @@ import {
 } from "../components/PublicSite";
 import SurveyScene from "../components/SurveyScene";
 export default function Product() {
+  const { t } = useTranslation("public");
+  const { locale, direction } = useLocale();
   return (
-    <div className="pn-site" dir="rtl" lang="fa">
+    <div className="pn-site" dir={direction} lang={locale}>
       <Head>
-        <title>معرفی محصول | پرس‌نما</title>
-        <meta
-          name="description"
-          content="سازنده پرسشنامه فارسی، منطق شرطی، انتشار، تحلیل پاسخ‌ها و نقش‌های سازمانی در پرس‌نما."
-        />
+        <title>{t("product.seoTitle")}</title>
+        <meta name="description" content={t("product.seoDescription")} />
       </Head>
       <PublicHeader />
       <main>
         <section className="pn-hero pn-product-hero">
           <div className="pn-hero-copy">
             <h1>
-              سؤال تا تصمیم.
+              {t("product.heroStart")}
               <br />
-              <span>همه در یک مسیر.</span>
+              <span>{t("product.heroAccent")}</span>
             </h1>
-            <p>
-              پرس‌نما فضای مشترک ساخت، انتشار و تحلیل پرسشنامه است. سؤال‌ها را
-              طراحی کنید، مسیر پاسخ‌دهی را بسازید و نتیجه را به تیم برسانید.
-            </p>
+            <p>{t("product.heroDescription")}</p>
             <Link href="/login" className="pn-button">
-              ورود به حساب
+              {t("common.login")}
               <Arrow />
             </Link>
           </div>
@@ -39,29 +37,26 @@ export default function Product() {
         </section>
         <section className="pn-product-section">
           <h2>
-            برای هر پرسش،
+            {t("product.typesStart")}
             <br />
-            یک ابزار مناسب.
+            {t("product.typesEnd")}
           </h2>
           <div>
-            <p>
-              ۱۲ نوع سؤال با تنظیمات و اعتبارسنجی متناسب، از یک پاسخ کوتاه تا
-              مقایسهٔ چند گزینه.
-            </p>
+            <p>{t("product.typesDescription")}</p>
             <div className="pn-question-types">
               {[
-                "متن",
-                "ایمیل",
-                "عدد",
-                "تک‌انتخابی",
-                "چندانتخابی",
-                "بله / خیر",
-                "امتیاز",
-                "مقیاس لیکرت",
+                t("product.types.text"),
+                t("product.types.email"),
+                t("product.types.number"),
+                t("product.types.single"),
+                t("product.types.multiple"),
+                t("product.types.boolean"),
+                t("product.types.rating"),
+                t("product.types.scale"),
                 "NPS",
-                "ماتریس",
-                "رتبه‌بندی",
-                "تاریخ",
+                t("product.types.matrix"),
+                t("product.types.ranking"),
+                t("product.types.date"),
               ].map((t) => (
                 <span key={t}>{t}</span>
               ))}
@@ -71,67 +66,49 @@ export default function Product() {
         <section id="logic" className="pn-story">
           <div>
             <h2>
-              پاسخ‌ها مسیر
+              {t("product.logicStart")}
               <br />
-              را تغییر می‌دهند.
+              {t("product.logicEnd")}
             </h2>
-            <p>
-              شرط نمایش، پرش رو‌به‌جلو و استفاده از پاسخ قبلی، پرسشنامه را
-              مرتبط‌تر می‌کنند. سؤال پنهان، پاسخ‌دهنده را برای تکمیل سؤال الزامی
-              متوقف نمی‌کند.
-            </p>
+            <p>{t("product.logicDescription")}</p>
           </div>
           <div className="pn-flow">
-            <div className="pn-flow-question">
-              کدام موضوع برای شما مهم‌تر است؟
-            </div>
+            <div className="pn-flow-question">{t("product.flow.question")}</div>
             <div className="pn-flow-paths">
               <div>
-                <span>تجربه</span>
-                <p>سؤال‌های تجربهٔ کاربری</p>
+                <span>{t("product.flow.experience")}</span>
+                <p>{t("product.flow.experienceQuestions")}</p>
               </div>
               <div>
-                <span>کیفیت</span>
-                <p>سؤال‌های کیفیت محصول</p>
+                <span>{t("product.flow.quality")}</span>
+                <p>{t("product.flow.qualityQuestions")}</p>
               </div>
             </div>
-            <small>نمایش مفهومی؛ شرط‌ها در سازنده تنظیم می‌شوند</small>
+            <small>{t("product.flow.caption")}</small>
           </div>
         </section>
         <section className="pn-workflow">
           <h2>
-            جزئیاتی که
+            {t("product.detailsStart")}
             <br />
-            مسیر را کامل می‌کنند.
+            {t("product.detailsEnd")}
           </h2>
           <div className="pn-workflow-list">
             <article>
-              <h3>بسازید، جابه‌جا کنید، پیش‌نمایش بگیرید.</h3>
-              <p>
-                بخش و سؤال را ویرایش و کپی کنید. ذخیرهٔ خودکار و وضعیت ذخیره به
-                حفظ تغییرها کمک می‌کند.
-              </p>
+              <h3>{t("product.details.createTitle")}</h3>
+              <p>{t("product.details.createDescription")}</p>
             </article>
             <article>
-              <h3>پرسشنامه را به مخاطب برسانید.</h3>
-              <p>
-                لینک عمومی، QR و دعوت اختصاصی با بازهٔ دریافت پاسخ. ارسال ایمیل
-                به تنظیم سرویس ایمیل سازمان نیاز دارد.
-              </p>
+              <h3>{t("product.details.shareTitle")}</h3>
+              <p>{t("product.details.shareDescription")}</p>
             </article>
             <article>
-              <h3>نتیجه را قابل استفاده کنید.</h3>
-              <p>
-                شمارش، نمودار، میانگین، NPS و فیلتر تاریخ در کنار خروجی CSV،
-                Excel و PDF فارسی.
-              </p>
+              <h3>{t("product.details.analyseTitle")}</h3>
+              <p>{t("product.details.analyseDescription")}</p>
             </article>
             <article>
-              <h3>هر حساب، دسترسی مشخص.</h3>
-              <p>
-                نقش مدیر، ویرایشگر و مشاهده‌گر؛ جداسازی سازمان‌ها، تاریخچهٔ
-                تغییرات و اتصال webhook.
-              </p>
+              <h3>{t("product.details.rolesTitle")}</h3>
+              <p>{t("product.details.rolesDescription")}</p>
             </article>
           </div>
         </section>

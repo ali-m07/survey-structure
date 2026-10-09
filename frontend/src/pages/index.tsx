@@ -1,3 +1,5 @@
+import { useLocale } from "../i18n/LocaleProvider";
+import { useTranslation } from "react-i18next";
 import Head from "next/head";
 import Link from "next/link";
 import {
@@ -8,159 +10,146 @@ import {
 } from "../components/PublicSite";
 import SurveyScene from "../components/SurveyScene";
 export default function Home() {
+  const { t } = useTranslation("public");
+  const { locale, direction } = useLocale();
   return (
-    <div className="pn-site" dir="rtl" lang="fa">
+    <div className="pn-site" dir={direction} lang={locale}>
       <Head>
-        <title>پرس‌نما | پرسش‌های بهتر، تصویر روشن‌تر</title>
-        <meta
-          name="description"
-          content="با پرس‌نما پرسشنامه بسازید، پاسخ‌ها را جمع‌آوری کنید و از داده به تصمیم برسید. سازنده فارسی با منطق شرطی، انتشار و تحلیل."
-        />
+        <title>{t("home.seoTitle")}</title>
+        <meta name="description" content={t("home.seoDescription")} />
       </Head>
       <PublicHeader />
       <main>
         <section className="pn-hero">
           <div className="pn-hero-copy">
             <h1>
-              هر پاسخ،
+              {t("home.heroStart")}
               <br />
-              یک <span>دنیای تازه.</span>
+              {t("home.heroConnector")} <span>{t("home.heroAccent")}</span>
             </h1>
             <p>
-              آدم‌ها حرف‌های زیادی برای گفتن دارند.
+              {t("home.heroIntro")}
               <br />
-              با پرس‌نما، سؤال درست را بپرسید، پاسخ‌ها را کنار هم ببینید و تصمیم
-              روشن‌تری بگیرید.
+              {t("home.heroDescription")}
             </p>
             <div className="pn-hero-actions">
               <Link className="pn-button" href="/login">
-                ورود به حساب
+                {t("common.login")}
                 <Arrow />
               </Link>
               <Link className="pn-text-link" href="/product">
-                کشف پرس‌نما
+                {t("home.discover")}
                 <Arrow />
               </Link>
             </div>
-            <p className="pn-hero-note">
-              برای پژوهش، شناخت مشتری و شنیدن صدای تیم.
-            </p>
+            <p className="pn-hero-note">{t("home.heroNote")}</p>
           </div>
           <SurveyScene />
         </section>
-        <section className="pn-capability-strip" aria-label="قابلیت‌های محصول">
-          <span>۱۲ نوع سؤال</span>
-          <span>منطق شرطی</span>
-          <span>تجربهٔ فارسی و موبایل</span>
-          <span>نقش‌ها و دسترسی تیم</span>
+        <section
+          className="pn-capability-strip"
+          aria-label={t("home.capabilitiesLabel")}
+        >
+          <span>{t("home.capabilities.types")}</span>
+          <span>{t("home.capabilities.logic")}</span>
+          <span>{t("home.capabilities.mobile")}</span>
+          <span>{t("home.capabilities.roles")}</span>
         </section>
         <section className="pn-story">
           <div>
             <h2>
-              فقط سؤال نپرسید.
+              {t("home.storyStart")}
               <br />
-              <span>مسیر گفت‌وگو بسازید.</span>
+              <span>{t("home.storyAccent")}</span>
             </h2>
-            <p>
-              یک پرسشنامهٔ خوب برای همه یکسان پیش نمی‌رود. با شرط نمایش و پرش،
-              هر پاسخ مسیر سؤال بعدی را مشخص می‌کند.
-            </p>
+            <p>{t("home.storyDescription")}</p>
             <Link href="/product#logic" className="pn-text-link">
-              بیشتر دربارهٔ منطق پرسشنامه
+              {t("home.logicLink")}
               <Arrow />
             </Link>
           </div>
-          <div className="pn-flow" aria-label="نمونه مسیر پرسشنامه">
-            <div className="pn-flow-question">از محصول استفاده کرده‌اید؟</div>
+          <div className="pn-flow" aria-label={t("home.flowLabel")}>
+            <div className="pn-flow-question">{t("home.flow.question")}</div>
             <div className="pn-flow-paths">
               <div>
-                <span>بله</span>
-                <p>تجربه‌تان چطور بود؟</p>
+                <span>{t("home.flow.yes")}</span>
+                <p>{t("home.flow.experience")}</p>
               </div>
               <div>
-                <span>هنوز نه</span>
-                <p>چه انتظاری از آن دارید؟</p>
+                <span>{t("home.flow.no")}</span>
+                <p>{t("home.flow.expectations")}</p>
               </div>
             </div>
-            <small>نمایش مفهومی مسیرهای شرطی</small>
+            <small>{t("home.flow.caption")}</small>
           </div>
         </section>
         <section className="pn-workflow">
           <h2>
-            از اولین سؤال
+            {t("home.workflowStart")}
             <br />
-            تا یک تصویر روشن.
+            {t("home.workflowEnd")}
           </h2>
           <div className="pn-workflow-list">
             <article>
-              <h3>ایده‌تان را به پرسش تبدیل کنید.</h3>
-              <p>
-                متن، گزینه، مقیاس، ماتریس و رتبه‌بندی؛ بخش‌ها را بچینید و قبل از
-                انتشار مسیر را پیش‌نمایش کنید.
-              </p>
+              <h3>{t("home.workflow.createTitle")}</h3>
+              <p>{t("home.workflow.createDescription")}</p>
             </article>
             <article>
-              <h3>به آدم‌ها نزدیک‌تر شوید.</h3>
-              <p>
-                با لینک عمومی، QR یا دعوت اختصاصی پاسخ بگیرید. پاسخ‌دهنده
-                می‌تواند در همان مرورگر ادامه دهد.
-              </p>
+              <h3>{t("home.workflow.shareTitle")}</h3>
+              <p>{t("home.workflow.shareDescription")}</p>
             </article>
             <article>
-              <h3>پاسخ‌ها را کنار هم ببینید.</h3>
-              <p>
-                نمودارها، میانگین‌ها و NPS را بررسی کنید و گزارش را با خروجی
-                CSV، Excel یا PDF همراه تیم ببرید.
-              </p>
+              <h3>{t("home.workflow.analyseTitle")}</h3>
+              <p>{t("home.workflow.analyseDescription")}</p>
             </article>
           </div>
         </section>
         <section className="pn-audience">
           <h2>
-            برای هر تیمی که
+            {t("home.audienceStart")}
             <br />
-            به شنیدن اهمیت می‌دهد.
+            {t("home.audienceEnd")}
           </h2>
           <div>
             <p>
-              <strong>پژوهشگران</strong>
-              <span>از طراحی پرسش تا خروجی داده.</span>
+              <strong>{t("home.audience.researchTitle")}</strong>
+              <span>{t("home.audience.researchDescription")}</span>
             </p>
             <p>
-              <strong>تیم‌های محصول</strong>
-              <span>شناخت تجربه و انتظار مشتری.</span>
+              <strong>{t("home.audience.productTitle")}</strong>
+              <span>{t("home.audience.productDescription")}</span>
             </p>
             <p>
-              <strong>تیم‌های سازمانی</strong>
-              <span>شنیدن بازخورد با دسترسی‌های مشخص.</span>
+              <strong>{t("home.audience.organisationTitle")}</strong>
+              <span>{t("home.audience.organisationDescription")}</span>
             </p>
           </div>
         </section>
         <section id="questions" className="pn-faq">
-          <h2>شاید سؤال شما هم باشد.</h2>
+          <h2>{t("home.faqTitle")}</h2>
           <div>
             {[
-              [
-                "آیا پاسخ‌دهنده باید وارد حساب شود؟",
-                "خیر. پرسشنامهٔ منتشرشده با لینک عمومی یا دعوت اختصاصی در دسترس است و پاسخ‌دهنده به حساب مدیریتی نیاز ندارد.",
-              ],
-              [
-                "دسترسی‌های تیم چطور تعیین می‌شود؟",
-                "بعد از ورود، عضویت سازمانی حساب مشخص می‌کند چه امکاناتی دارید. مدیر اعضا و نقش‌ها را مدیریت می‌کند؛ ویرایشگر پرسشنامه می‌سازد و مشاهده‌گر داده‌ها و گزارش‌ها را می‌بیند.",
-              ],
-              [
-                "آیا می‌توانم پرسشنامهٔ منتشرشده را تغییر دهم؟",
-                "ساختار نسخهٔ منتشرشده ثابت می‌ماند تا پاسخ‌ها قابل مقایسه باشند. برای تغییر، از آن یک پیش‌نویس تازه بسازید.",
-              ],
-              [
-                "چه خروجی‌هایی می‌توانم بگیرم؟",
-                "پاسخ‌ها به صورت CSV و Excel و گزارش‌ها به صورت PDF قابل دریافت هستند. نمایش و خروجی فارسی پشتیبانی می‌شود.",
-              ],
+              [t("home.faq.signinQuestion"), t("home.faq.signinAnswer")],
+              [t("home.faq.rolesQuestion"), t("home.faq.rolesAnswer")],
+              [t("home.faq.publishedQuestion"), t("home.faq.publishedAnswer")],
+              [t("home.faq.exportsQuestion"), t("home.faq.exportsAnswer")],
             ].map(([q, a]) => (
               <details key={q}>
                 <summary>
                   {q}
-                  <span aria-hidden="true">+</span>
+                  <svg
+                    className="pn-faq-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M12 5v14M5 12h14"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </summary>
                 <p>{a}</p>
               </details>

@@ -1,3 +1,5 @@
+import { useLocale } from "../../../i18n/LocaleProvider";
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -7,6 +9,8 @@ import { AutoField } from "../../../components/AutoField";
 import { SurveyRunner } from "../../../components/SurveyRunner";
 import { savePendingFields } from "../../../services/autosave";
 export default function Builder() {
+  const { t } = useTranslation("survey");
+  const { direction } = useLocale();
   const router = useRouter();
   const { query } = router;
   const id = query.id;
@@ -43,8 +47,8 @@ export default function Builder() {
   };
   if (!survey)
     return (
-      <main className="p-8" dir="rtl">
-        {error || "در حال دریافت…"} <Link href="/surveys">بازگشت</Link>
+      <main className="p-8" dir={direction}>
+        {error || t("loading")} <Link href="/surveys">{t("back")}</Link>
       </main>
     );
   const locked = survey.status !== "draft";
@@ -86,7 +90,7 @@ export default function Builder() {
       order,
     });
   return (
-    <main dir="rtl" className="min-h-screen bg-blue-50 p-4 md:p-8">
+    <main dir={direction} className="min-h-screen bg-blue-50 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-4">
         <nav className="flex gap-4">
           <Link
@@ -96,7 +100,7 @@ export default function Builder() {
               action(() => router.push("/surveys"));
             }}
           >
-            پرسشنامه‌ها
+            {t("surveys")}
           </Link>
           <Link
             href={`/surveys/${id}`}
@@ -105,7 +109,7 @@ export default function Builder() {
               action(() => router.push(`/surveys/${id}`));
             }}
           >
-            انتشار و گزارش
+            {t("publishReport")}
           </Link>
           <button
             disabled={busy}
@@ -116,30 +120,26 @@ export default function Builder() {
               })
             }
           >
-            {preview ? "ویرایش" : "پیش‌نمایش"}
+            {preview ? t("edit") : t("preview")}
           </button>
           <button disabled={busy} onClick={() => action(async () => {})}>
-            ذخیره همه تغییرات
+            {t("saveAll")}
           </button>
         </nav>
-        <h1 className="text-3xl font-bold">سازنده پرسشنامه</h1>
+        <h1 className="text-3xl font-bold">{t("builder")}</h1>
         {error && (
           <p role="alert" className="bg-red-50 text-red-800 p-4">
             {error}
           </p>
         )}
-        {locked && (
-          <p className="bg-yellow-50 p-4">
-            نسخه منتشر شده قابل ویرایش نیست. از صفحه مدیریت یک کپی بسازید.
-          </p>
-        )}
+        {locked && <p className="bg-yellow-50 p-4">{t("locked")}</p>}
         {preview ? (
           <SurveyRunner survey={survey} preview />
         ) : (
           <fieldset disabled={busy || locked} className="space-y-4">
             <section className="bg-white p-6 rounded shadow space-y-3">
               <AutoField
-                label="عنوان"
+                label={t("title")}
                 value={survey.title}
                 onSave={async (title) => {
                   await patch("surveys", survey.id, { title });
@@ -149,7 +149,7 @@ export default function Builder() {
                 }}
               />
               <AutoField
-                label="توضیح"
+                label={t("description")}
                 value={survey.description}
                 multiline
                 onSave={async (description) => {
@@ -160,7 +160,7 @@ export default function Builder() {
                 }}
               />
               <label>
-                زبان{" "}
+                {t("language")}{" "}
                 <select
                   value={survey.settings?.language || "fa"}
                   onChange={(e) =>
@@ -176,6 +176,7 @@ export default function Builder() {
                 >
                   <option value="fa">فارسی</option>
                   <option value="en">English</option>
+                  <option value="fr">Français</option>
                 </select>
               </label>
               <label className="block">
@@ -193,7 +194,7 @@ export default function Builder() {
                     )
                   }
                 />{" "}
-                اجازه پاسخ مجدد
+                {t("multiple")}
               </label>
               <label className="block">
                 <input
@@ -210,13 +211,11 @@ export default function Builder() {
                     )
                   }
                 />{" "}
-                فقط با دعوت اختصاصی
+                {t("invitationOnly")}
               </label>
               {(["starts_at", "ends_at"] as const).map((key) => (
                 <label key={key} className="block">
-                  {key === "starts_at"
-                    ? "شروع دریافت پاسخ (زمان محلی)"
-                    : "پایان دریافت پاسخ (زمان محلی)"}
+                  {key === "starts_at" ? t("starts") : t("ends")}
                   <input
                     type="datetime-local"
                     className="border p-2 block"
@@ -248,17 +247,23 @@ export default function Builder() {
                     )
                   }
                 />{" "}
-                ترتیب تصادفی گزینه‌های تک انتخابی و چند انتخابی
+                {t("randomize")}
               </label>{" "}
             </section>
+            {!survey.sections.length && (
+              <p className="bg-white p-6 rounded">{t("noSections")}</p>
+            )}
             {survey.sections.map((section, si) => (
               <section
                 key={section.id}
                 className="bg-white p-5 rounded shadow space-y-4"
               >
                 <div className="flex flex-wrap gap-3">
-                  <h2 className="font-bold">بخش {si + 1}</h2>
+                  <h2 className="font-bold">
+                    {t("sectionNumber", { number: si + 1 })}
+                  </h2>
                   <button
+                    aria-label={t("moveUp")}
                     disabled={si === 0}
                     onClick={() =>
                       action(() => reorder("sections", survey.sections, si, -1))
@@ -267,6 +272,7 @@ export default function Builder() {
                     ↑
                   </button>
                   <button
+                    aria-label={t("moveDown")}
                     disabled={si === survey.sections.length - 1}
                     onClick={() =>
                       action(() => reorder("sections", survey.sections, si, 1))
@@ -284,12 +290,12 @@ export default function Builder() {
                       )
                     }
                   >
-                    کپی بخش
+                    {t("copySection")}
                   </button>
                   <button
                     className="text-red-700"
                     onClick={() => {
-                      if (confirm("این بخش و سؤال‌ها حذف شوند؟"))
+                      if (confirm(t("confirmSection")))
                         action(() =>
                           apiClient.delete(
                             `${SURVEY_API}/sections/${section.id}/`,
@@ -297,28 +303,32 @@ export default function Builder() {
                         );
                     }}
                   >
-                    حذف بخش
+                    {t("deleteSection")}
                   </button>
                 </div>
                 <AutoField
-                  label="عنوان بخش"
+                  label={t("sectionTitle")}
                   value={section.title}
                   onSave={(title) => patch("sections", section.id, { title })}
                 />
                 <AutoField
-                  label="توضیح بخش"
+                  label={t("sectionDescription")}
                   value={section.description}
                   onSave={(description) =>
                     patch("sections", section.id, { description })
                   }
                 />
+                {!section.questions.length && (
+                  <p className="text-gray-600">{t("noQuestions")}</p>
+                )}
                 {section.questions.map((q, qi) => (
                   <article key={q.id} className="border rounded p-4 space-y-3">
                     <div className="flex flex-wrap gap-3">
                       <span>
-                        سؤال {qi + 1} · شناسه {q.id}
+                        {t("questionNumber", { number: qi + 1, id: q.id })}
                       </span>
                       <button
+                        aria-label={t("moveUp")}
                         disabled={qi === 0}
                         onClick={() =>
                           action(() =>
@@ -329,6 +339,7 @@ export default function Builder() {
                         ↑
                       </button>
                       <button
+                        aria-label={t("moveDown")}
                         disabled={qi === section.questions.length - 1}
                         onClick={() =>
                           action(() =>
@@ -345,12 +356,12 @@ export default function Builder() {
                           )
                         }
                       >
-                        کپی
+                        {t("copy")}
                       </button>
                       <button
                         className="text-red-700"
                         onClick={() => {
-                          if (confirm("سؤال حذف شود؟"))
+                          if (confirm(t("confirmQuestion")))
                             action(() =>
                               apiClient.delete(
                                 `${SURVEY_API}/questions/${q.id}/`,
@@ -358,10 +369,10 @@ export default function Builder() {
                             );
                         }}
                       >
-                        حذف
+                        {t("delete")}
                       </button>
                       <label>
-                        انتقال به{" "}
+                        {t("moveTo")}{" "}
                         <select
                           value={section.id}
                           onChange={(e) =>
@@ -385,7 +396,7 @@ export default function Builder() {
                       </label>
                     </div>
                     <AutoField
-                      label="متن سؤال (ارجاع به پاسخ: {{شناسه سؤال}})"
+                      label={t("questionText")}
                       value={q.question_text}
                       multiline
                       onSave={(question_text) =>
@@ -393,7 +404,7 @@ export default function Builder() {
                       }
                     />
                     <label>
-                      نوع{" "}
+                      {t("type")}{" "}
                       <select
                         value={q.question_type}
                         onChange={(e) =>
@@ -404,9 +415,9 @@ export default function Builder() {
                           )
                         }
                       >
-                        {QUESTION_TYPES.map(([value, label]) => (
+                        {QUESTION_TYPES.map(([value]) => (
                           <option key={value} value={value}>
-                            {label}
+                            {t(`type_${value}`)}
                           </option>
                         ))}
                       </select>
@@ -423,7 +434,7 @@ export default function Builder() {
                           )
                         }
                       />{" "}
-                      الزامی
+                      {t("required")}
                     </label>
                     {[
                       "single_choice",
@@ -432,7 +443,7 @@ export default function Builder() {
                       "scale",
                     ].includes(q.question_type) && (
                       <AutoField
-                        label="گزینه‌ها (هر گزینه در یک خط)"
+                        label={t("options")}
                         value={(q.options || []).join("\n")}
                         multiline
                         onSave={(value) =>
@@ -446,7 +457,7 @@ export default function Builder() {
                       />
                     )}
                     <details>
-                      <summary>تنظیمات و منطق سؤال</summary>
+                      <summary>{t("logic")}</summary>
                       <RuleEditor
                         question={q}
                         questions={survey.sections.flatMap((s) => s.questions)}
@@ -463,7 +474,7 @@ export default function Builder() {
                     action(() =>
                       apiClient.post(`${SURVEY_API}/questions/`, {
                         section: section.id,
-                        question_text: "سؤال جدید",
+                        question_text: t("newQuestion"),
                         question_type: "text",
                         is_required: false,
                         order: section.questions.length,
@@ -473,7 +484,7 @@ export default function Builder() {
                     )
                   }
                 >
-                  + افزودن سؤال
+                  {t("addQuestion")}
                 </button>
               </section>
             ))}
@@ -483,14 +494,14 @@ export default function Builder() {
                 action(() =>
                   apiClient.post(`${SURVEY_API}/sections/`, {
                     survey: survey.id,
-                    title: "بخش جدید",
+                    title: t("newSection"),
                     description: "",
                     order: survey.sections.length,
                   }),
                 )
               }
             >
-              + افزودن بخش
+              {t("addSection")}
             </button>
           </fieldset>
         )}
@@ -520,6 +531,7 @@ function RuleEditor({
   questions: Question[];
   save: (rules: any) => Promise<void>;
 }) {
+  const { t } = useTranslation("survey");
   const [rules, setRules] = useState(question.validation_rules || {});
   const [matrixRows, setMatrixRows] = useState(
     (question.validation_rules?.rows || []).join("\n"),
@@ -533,18 +545,18 @@ function RuleEditor({
   const later = questions.slice(index + 1);
   const bounds = ["number", "rating", "nps"].includes(question.question_type)
     ? [
-        ["min", "حداقل"],
-        ["max", "حداکثر"],
+        ["min", t("min")],
+        ["max", t("max")],
       ]
     : ["text", "email"].includes(question.question_type)
       ? [
-          ["min_length", "حداقل طول"],
-          ["max_length", "حداکثر طول"],
+          ["min_length", t("minLength")],
+          ["max_length", t("maxLength")],
         ]
       : question.question_type === "multiple_choice"
         ? [
-            ["min_choices", "حداقل انتخاب"],
-            ["max_choices", "حداکثر انتخاب"],
+            ["min_choices", t("minChoices")],
+            ["max_choices", t("maxChoices")],
           ]
         : [];
   const update = (key: string, value: any) =>
@@ -589,8 +601,7 @@ function RuleEditor({
       {question.question_type === "matrix" &&
         ["rows", "columns"].map((key) => (
           <label key={key} className="block">
-            {key === "rows" ? "ردیف‌های ماتریس" : "ستون‌های ماتریس"} (هر مورد یک
-            خط)
+            {t(key === "rows" ? "matrixRows" : "matrixColumns")}
             <textarea
               className="border p-2 w-full"
               value={key === "rows" ? matrixRows : matrixColumns}
@@ -610,7 +621,7 @@ function RuleEditor({
         ))}
       <div className="border p-3 rounded space-y-2">
         <label className="block">
-          نمایش شرطی بر اساس سؤال قبلی
+          {t("conditional")}
           <select
             className="border p-2 block w-full"
             value={rules.display_if?.question || ""}
@@ -629,7 +640,7 @@ function RuleEditor({
               )
             }
           >
-            <option value="">همیشه نمایش داده شود</option>
+            <option value="">{t("always")}</option>
             {earlier.map((q) => (
               <option key={q.id} value={q.id}>
                 {q.question_text}
@@ -640,7 +651,7 @@ function RuleEditor({
         {rules.display_if && (
           <>
             <label className="block">
-              شرط
+              {t("condition")}
               <select
                 className="border p-2 block"
                 value={rules.display_if.operator}
@@ -652,12 +663,12 @@ function RuleEditor({
                 }
               >
                 {[
-                  ["equals", "برابر"],
-                  ["not_equals", "نابرابر"],
-                  ["contains", "شامل"],
-                  ["greater_than", "بزرگتر"],
-                  ["less_than", "کوچکتر"],
-                  ["answered", "پاسخ داده شده"],
+                  ["equals", t("equals")],
+                  ["not_equals", t("notEquals")],
+                  ["contains", t("contains")],
+                  ["greater_than", t("greater")],
+                  ["less_than", t("less")],
+                  ["answered", t("answered")],
                 ].map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
@@ -668,7 +679,7 @@ function RuleEditor({
             {rules.display_if.operator !== "answered" &&
               (source?.question_type === "boolean" ? (
                 <label>
-                  پاسخ
+                  {t("answer")}
                   <select
                     className="border p-2"
                     value={String(rules.display_if.value)}
@@ -679,13 +690,13 @@ function RuleEditor({
                       })
                     }
                   >
-                    <option value="true">بله</option>
-                    <option value="false">خیر</option>
+                    <option value="true">{t("yes")}</option>
+                    <option value="false">{t("no")}</option>
                   </select>
                 </label>
               ) : (
                 <label className="block">
-                  مقدار
+                  {t("value")}
                   <input
                     className="border p-2 block"
                     type={numeric ? "number" : "text"}
@@ -714,10 +725,17 @@ function RuleEditor({
         question.question_type,
       ) && (
         <div className="border p-3 rounded space-y-2">
-          <h3 className="font-semibold">پرش به سؤال بعدی بر اساس پاسخ</h3>
+          <h3 className="font-semibold">{t("branch")}</h3>
           {triggerOptions.map((trigger) => (
             <label key={trigger} className="block">
-              پاسخ {trigger}
+              {t("answerTrigger", {
+                answer:
+                  trigger === "true"
+                    ? t("yes")
+                    : trigger === "false"
+                      ? t("no")
+                      : trigger,
+              })}
               <select
                 className="border p-2 block w-full"
                 value={rules.jump_to?.[trigger] || ""}
@@ -729,7 +747,7 @@ function RuleEditor({
                   update("jump_to", branches);
                 }}
               >
-                <option value="">ادامه معمول</option>
+                <option value="">{t("normal")}</option>
                 {later.map((q) => (
                   <option key={q.id} value={q.id}>
                     {q.question_text}
@@ -745,13 +763,13 @@ function RuleEditor({
         onClick={async () => {
           try {
             await save(rules);
-            setStatus("ذخیره شد");
+            setStatus(t("saved"));
           } catch (e) {
             setStatus(String(e));
           }
         }}
       >
-        ذخیره تنظیمات و منطق
+        {t("saveLogic")}
       </button>
       <p role="status">{status}</p>
     </div>

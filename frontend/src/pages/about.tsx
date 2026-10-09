@@ -1,3 +1,5 @@
+import { useLocale } from "../i18n/LocaleProvider";
+import { useTranslation } from "react-i18next";
 import Head from "next/head";
 import Link from "next/link";
 import {
@@ -7,79 +9,59 @@ import {
   PublicHeader,
 } from "../components/PublicSite";
 export default function About() {
+  const { t } = useTranslation("public");
+  const { locale, direction } = useLocale();
   return (
-    <div className="pn-site" dir="rtl" lang="fa">
+    <div className="pn-site" dir={direction} lang={locale}>
       <Head>
-        <title>دربارهٔ ما | پرس‌نما</title>
-        <meta
-          name="description"
-          content="پرس‌نما برای کوتاه کردن فاصله میان پرسیدن، شنیدن و تصمیم گرفتن ساخته می‌شود."
-        />
+        <title>{t("about.seoTitle")}</title>
+        <meta name="description" content={t("about.seoDescription")} />
       </Head>
       <PublicHeader />
       <main>
         <section className="pn-about-intro">
           <h1>
-            ما به قدرت
+            {t("about.heroStart")}
             <br />
-            <span>یک سؤال خوب</span>
+            <span>{t("about.heroAccent")}</span>
             <br />
-            باور داریم.
+            {t("about.heroEnd")}
           </h1>
           <div className="pn-about-mark" aria-hidden="true">
-            <div>؟</div>
-            <div>؟</div>
-            <div>؟</div>
+            <div>{t("about.mark")}</div>
+            <div>{t("about.mark")}</div>
+            <div>{t("about.mark")}</div>
           </div>
         </section>
         <section className="pn-about-letter">
-          <h2>شنیدن، نقطهٔ شروع ماست.</h2>
+          <h2>{t("about.letterTitle")}</h2>
           <div>
-            <p>
-              پرس‌نما برای کوتاه‌کردن فاصلهٔ میان پرسیدن، شنیدن و تصمیم‌گرفتن
-              ساخته می‌شود. می‌خواهیم تیم‌ها بتوانند پرسش‌هایشان را روشن بیان
-              کنند و پاسخ آدم‌ها را در بستری قابل فهم کنار هم ببینند.
-            </p>
-            <p>
-              از یک پژوهش کوچک تا بازخورد مشتری و تجربهٔ همکاران، هدف ما یکسان
-              است: ابزار به جای پیچیده‌کردن کار، به جریان گفت‌وگو کمک کند.
-            </p>
-            <p>
-              نام پرس‌نما از «پرسش» و «نما» می‌آید؛ از سؤال شروع می‌کنیم تا
-              تصویر روشن‌تری از دیدگاه آدم‌ها بسازیم.
-            </p>
+            <p>{t("about.letterFirst")}</p>
+            <p>{t("about.letterSecond")}</p>
+            <p>{t("about.letterThird")}</p>
             <Link href="/product" className="pn-text-link">
-              آشنایی با محصول
+              {t("about.productLink")}
               <Arrow />
             </Link>
           </div>
         </section>
         <section className="pn-principles">
           <h2>
-            چیزهایی که
+            {t("about.principlesStart")}
             <br />
-            برای ما مهم‌اند.
+            {t("about.principlesEnd")}
           </h2>
           <article>
-            <h3>وضوح در پرسیدن</h3>
-            <p>
-              سؤال، مسیر و گزارش باید قابل فهم باشند. انتخاب‌های درست از ابزار
-              روشن شروع می‌شوند.
-            </p>
+            <h3>{t("about.clarityTitle")}</h3>
+            <p>{t("about.clarityDescription")}</p>
           </article>
           <article>
-            <h3>احترام به پاسخ‌دهنده</h3>
-            <p>
-              تجربهٔ فارسی، موبایل و سؤال‌های مرتبط، به زمان و توجه آدم‌ها
-              احترام می‌گذارد.
-            </p>
+            <h3>{t("about.respectTitle")}</h3>
+            <p>{t("about.respectDescription")}</p>
           </article>
           <article>
-            <h3>مسئولیت در دسترسی</h3>
-            <p>
-              دادهٔ هر سازمان در محدودهٔ همان سازمان قرار می‌گیرد و نقش حساب
-              تعیین‌کنندهٔ دسترسی است.
-            </p>
+            <h3>{t("about.accessTitle")}</h3>
+            <p>{t("about.accessDescription")}</p>
           </article>
         </section>
         <FinalCTA />

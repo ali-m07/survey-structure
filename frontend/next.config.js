@@ -2,12 +2,15 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  i18n: { locales: ['fa', 'en', 'fr'], defaultLocale: 'fa' },
   // Preserve DRF URL slashes so POST requests do not become redirecting GETs.
   skipTrailingSlashRedirect: true,
   async rewrites() {
     return [
       {
-        source: "/api/:path*",
+        source: "/:locale(fa|en|fr)/api/:path*",
+        // Match Next's internal locale prefix, but keep Django API URLs unprefixed.
+        locale: false,
         destination: `${process.env.API_PROXY_URL || "http://localhost:8003"}/api/:path*/`,
       },
     ];

@@ -1,0 +1,26 @@
+{
+  "scene": {
+    "insights": "Des réponses aux idées",
+    "path": "Un parcours, plusieurs choix",
+    "preview": "Aperçu interactif",
+    "aria": "Aperçu interactif du questionnaire",
+    "step": "1 / 3",
+    "title": "Votre voix,",
+    "titleAccent": "le début du changement.",
+    "question": "Comment était votre expérience aujourd’hui ?",
+    "choices": [
+      "Correcte",
+      "Bonne",
+      "Excellente"
+    ],
+    "try": "Essayez de choisir une réponse",
+    "selected": "Votre choix : {{answer}}",
+    "caption": "Démonstration · Votre réponse n’est pas enregistrée",
+    "pause": "Mettre en pause",
+    "play": "Animer les cartes",
+    "language": "Langue du site"
+  },
+  "session": {
+    "invalidResponse": "La réponse de connexion est invalide. Veuillez réessayer."
+  }
+}
