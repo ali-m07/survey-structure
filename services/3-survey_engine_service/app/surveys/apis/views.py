@@ -1,155 +1,123 @@
+import secrets
+from django.contrib.auth import authenticate
+from django.utils import timezone
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q, Count, Avg
-from app.surveys.models import (
-    Survey, Section, Question, Participant, Submission, Answer, 
-    RealTimeResponse, DEIQuestionSet
-)
-from app.surveys.apis.serializers import (
-    SurveySerializer, SectionSerializer, QuestionSerializer,
-    ParticipantSerializer, SubmissionSerializer, AnswerSerializer,
-    RealTimeResponseSerializer, DEIQuestionSetSerializer
-)
-from app.surveys.services.distribution_service import DistributionService
-from app.surveys.services.blockchain_service import BlockchainService
-import json
+from rest_framework.exceptions import ValidationError
+from app.surveys.models import Survey, Section, Question, Participant, Submission, Answer, RealTimeResponse, DEIQuestionSet, Membership
+from .serializers import SurveySerializer, SectionSerializer, QuestionSerializer, ParticipantSerializer, SubmissionSerializer, AnswerSerializer, RealTimeResponseSerializer, DEIQuestionSetSerializer
+from .access import tenant, editable, audit
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login(request):
+    user = authenticate(username=request.data.get('username'), password=request.data.get('password'))
+    if not user:
+        return Response({'detail':'Invalid credentials.'}, status=401)
+    token, _ = Token.objects.get_or_create(user=user)
+    return Response({'token':token.key, 'user':{'id':user.id,'username':user.username}, 'tenants':list(user.survey_memberships.values('tenant_id','role'))})
 
-class SurveyViewSet(viewsets.ModelViewSet):
-    queryset = Survey.objects.all()
-    serializer_class = SurveySerializer
-    permission_classes = []  # AllowAny for now to simplify testing
-    
+@api_view(['GET'])
+def me(request):
+    return Response({'user':{'id':request.user.id,'username':request.user.username}, 'tenants':list(request.user.survey_memberships.values('tenant_id','role'))})
+
+@api_view(['POST'])
+def logout(request):
+    Token.objects.filter(user=request.user).delete()
+    return Response(status=204)
+
+class ScopedViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    tenant_path = 'survey__tenant_id'
     def get_queryset(self):
-        # Simplified - return all surveys for now
-        tenant_id = self.request.query_params.get('tenant_id', 'default')
-        return Survey.objects.filter(tenant_id=tenant_id)
-    
+        org = tenant(self.request, self.request.method not in ('GET','HEAD','OPTIONS'))
+        qs = self.queryset.filter(**{self.tenant_path:org})
+        for name in ('survey','section'):
+            if name in self.request.query_params and name in [f.name for f in self.queryset.model._meta.fields]:
+                qs = qs.filter(**{name+'_id':self.request.query_params[name]})
+        return qs
+    def perform_destroy(self, instance):
+        survey = instance if isinstance(instance, Survey) else getattr(instance, 'survey', None) or instance.section.survey
+        editable(survey)
+        audit(self.request, 'delete.'+instance._meta.model_name, instance)
+        instance.delete()
+
+class SurveyViewSet(ScopedViewSet):
+    queryset = Survey.objects.all().prefetch_related('sections__questions')
+    serializer_class = SurveySerializer
+    tenant_path = 'tenant_id'
+    def perform_create(self, serializer):
+        obj = serializer.save(tenant_id=tenant(self.request, True), created_by_id=str(self.request.user.id))
+        audit(self.request, 'create.survey', obj)
+    def perform_update(self, serializer):
+        editable(self.get_object())
+        obj = serializer.save()
+        audit(self.request, 'update.survey', obj)
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
-        """Publish a survey."""
         survey = self.get_object()
+        from app.surveys.services.validation import validate_structure
+        validate_structure(survey)
         survey.status = 'active'
-        survey.save()
-        
-        # Store survey hash on blockchain
-        blockchain_service = BlockchainService()
-        survey_data = {
-            'id': str(survey.id),
-            'title': survey.title,
-            'description': survey.description,
-            'created_at': survey.created_at.isoformat()
-        }
-        hash_value = blockchain_service.store_survey_hash(str(survey.id), survey_data)
-        survey.blockchain_hash = hash_value
-        survey.save()
-        
-        return Response({'status': 'published', 'blockchain_hash': hash_value})
-    
+        survey.save(update_fields=['status','updated_at'])
+        audit(request, 'publish.survey', survey)
+        return Response(SurveySerializer(survey).data)
+    @action(detail=True, methods=['post'])
+    def close(self, request, pk=None):
+        survey = self.get_object()
+        survey.status = 'closed'
+        survey.save(update_fields=['status','updated_at'])
+        audit(request, 'close.survey', survey)
+        return Response(SurveySerializer(survey).data)
     @action(detail=True, methods=['get'])
     def statistics(self, request, pk=None):
-        """Get survey statistics."""
         survey = self.get_object()
-        total_participants = Participant.objects.filter(survey=survey).count()
-        completed = Participant.objects.filter(survey=survey, completed_at__isnull=False).count()
-        submissions = Submission.objects.filter(survey=survey).count()
-        
-        return Response({
-            'total_participants': total_participants,
-            'completed': completed,
-            'pending': total_participants - completed,
-            'submissions': submissions,
-            'completion_rate': (completed / total_participants * 100) if total_participants > 0 else 0
-        })
+        count = survey.participants.count()
+        completed = survey.participants.filter(completed_at__isnull=False).count()
+        return Response({'total_participants':count,'completed':completed,'pending':count-completed,'submissions':survey.submissions.count(),'completion_rate':100*completed/count if count else 0})
 
-
-class SectionViewSet(viewsets.ModelViewSet):
+class SectionViewSet(ScopedViewSet):
     queryset = Section.objects.all()
     serializer_class = SectionSerializer
-    permission_classes = []  # AllowAny for now
 
-
-class QuestionViewSet(viewsets.ModelViewSet):
+class QuestionViewSet(ScopedViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
-    permission_classes = []  # AllowAny for now
+    tenant_path = 'section__survey__tenant_id'
 
-
-class ParticipantViewSet(viewsets.ModelViewSet):
+class ParticipantViewSet(ScopedViewSet):
     queryset = Participant.objects.all()
     serializer_class = ParticipantSerializer
-    permission_classes = []  # AllowAny for now
-    
-    @action(detail=True, methods=['post'])
-    def send_invitation(self, request, pk=None):
-        """Send survey invitation to participant."""
-        participant = self.get_object()
-        distribution_service = DistributionService()
-        
-        # Generate unique link
-        survey_link = distribution_service.generate_survey_link(participant)
-        
-        # Send invitation via notification service
-        # This would trigger n8n workflow
-        return Response({'survey_link': survey_link, 'status': 'invitation_sent'})
+    def perform_create(self, serializer):
+        survey = serializer.validated_data['survey']
+        if survey.tenant_id != tenant(self.request, True):
+            raise ValidationError('Invalid survey.')
+        serializer.save(token=secrets.token_urlsafe(32))
+    def perform_update(self, serializer):
+        if serializer.validated_data.get('survey', self.get_object().survey).tenant_id != tenant(self.request, True):
+            raise ValidationError('Invalid survey.')
+        serializer.save()
 
-
-class SubmissionViewSet(viewsets.ModelViewSet):
+class SubmissionViewSet(ScopedViewSet):
     queryset = Submission.objects.all()
     serializer_class = SubmissionSerializer
-    permission_classes = []  # AllowAny for now
-    
-    def create(self, request, *args, **kwargs):
-        """Create a submission with answers."""
-        submission_data = request.data
-        answers_data = submission_data.pop('answers', [])
-        
-        # Create submission
-        submission = Submission.objects.create(**submission_data)
-        
-        # Create answers
-        for answer_data in answers_data:
-            Answer.objects.create(submission=submission, **answer_data)
-        
-        # Store submission hash on blockchain
-        blockchain_service = BlockchainService()
-        submission_data_dict = {
-            'id': str(submission.id),
-            'survey_id': str(submission.survey.id),
-            'submitted_at': submission.submitted_at.isoformat(),
-            'answers': [{'question_id': str(a.question.id), 'answer': a.answer_text} 
-                       for a in submission.answers.all()]
-        }
-        hash_value = blockchain_service.store_response_hash(str(submission.id), submission_data_dict)
-        submission.blockchain_hash = hash_value
-        submission.save()
-        
-        serializer = self.get_serializer(submission)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    http_method_names = ['get','head','options']
 
-
-class AnswerViewSet(viewsets.ModelViewSet):
+class AnswerViewSet(ScopedViewSet):
     queryset = Answer.objects.all()
     serializer_class = AnswerSerializer
-    permission_classes = []  # AllowAny for now
+    tenant_path = 'submission__survey__tenant_id'
+    http_method_names = ['get','head','options']
 
-
-class RealTimeResponseViewSet(viewsets.ModelViewSet):
+class RealTimeResponseViewSet(ScopedViewSet):
     queryset = RealTimeResponse.objects.all()
     serializer_class = RealTimeResponseSerializer
-    permission_classes = []  # AllowAny for now
-    
-    def create(self, request, *args, **kwargs):
-        """Create a real-time response."""
-        response = super().create(request, *args, **kwargs)
-        # This would trigger WebSocket broadcast in production
-        return response
+    http_method_names = ['get','head','options']
 
-
-class DEIQuestionSetViewSet(viewsets.ModelViewSet):
+class DEIQuestionSetViewSet(ScopedViewSet):
     queryset = DEIQuestionSet.objects.all()
     serializer_class = DEIQuestionSetSerializer
-    permission_classes = []  # AllowAny for now
-
+    http_method_names = ['get','head','options']

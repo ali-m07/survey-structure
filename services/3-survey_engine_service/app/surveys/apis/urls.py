@@ -16,7 +16,12 @@ router.register(r'answers', AnswerViewSet)
 router.register(r'realtime-responses', RealTimeResponseViewSet)
 router.register(r'dei-question-sets', DEIQuestionSetViewSet)
 
+from .views import login, me, logout
+
 urlpatterns = [
+    path('auth/login/', login),
+    path('auth/me/', me),
+    path('auth/logout/', logout),
     path('', include(router.urls)),
 ]
 

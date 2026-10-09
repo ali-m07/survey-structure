@@ -6,6 +6,18 @@ from app.surveys.models import (
 
 
 class QuestionSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        from .access import tenant, editable
+        section = attrs.get('section', getattr(self.instance, 'section', None))
+        if section and section.survey.tenant_id != tenant(self.context['request'], True):
+            raise serializers.ValidationError('Invalid section.')
+        if section:
+            editable(section.survey)
+        kind = attrs.get('question_type', getattr(self.instance, 'question_type', None))
+        if kind in ('voice', 'file_upload'):
+            raise serializers.ValidationError('File and voice uploads are not supported.')
+        return attrs
+
     class Meta:
         model = Question
         fields = ['id', 'section', 'question_text', 'question_type', 'is_required', 
@@ -14,6 +26,15 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class SectionSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        from .access import tenant, editable
+        survey = attrs.get('survey', getattr(self.instance, 'survey', None))
+        if survey and survey.tenant_id != tenant(self.context['request'], True):
+            raise serializers.ValidationError('Invalid survey.')
+        if survey:
+            editable(survey)
+        return attrs
+
     questions = QuestionSerializer(many=True, read_only=True)
     
     class Meta:
@@ -32,7 +53,7 @@ class SurveySerializer(serializers.ModelSerializer):
         fields = ['id', 'tenant_id', 'title', 'description', 'status', 'created_by_id', 
                  'created_at', 'updated_at', 'starts_at', 'ends_at', 'settings',
                  'blockchain_hash', 'sections', 'participant_count', 'submission_count']
-        read_only_fields = ['id', 'created_at', 'updated_at', 'blockchain_hash']
+        read_only_fields = ['id', 'tenant_id', 'created_by_id', 'status', 'created_at', 'updated_at', 'blockchain_hash']
 
 
 class ParticipantSerializer(serializers.ModelSerializer):

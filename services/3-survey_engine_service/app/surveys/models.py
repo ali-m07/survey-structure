@@ -61,6 +61,7 @@ class Question(models.Model):
         ('file_upload', 'File Upload'),
         ('date', 'Date'),
         ('voice', 'Voice Input'),
+        ('number', 'Number'), ('email', 'Email'), ('boolean', 'Boolean'), ('nps', 'NPS'),
     ]
     
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='questions')
@@ -153,3 +154,19 @@ class DEIQuestionSet(models.Model):
     def __str__(self):
         return self.name
 
+
+
+class Membership(models.Model):
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='survey_memberships')
+    tenant_id = models.CharField(max_length=255, db_index=True)
+    role = models.CharField(max_length=20, choices=[('admin','Admin'),('editor','Editor'),('viewer','Viewer')], default='editor')
+    class Meta:
+        unique_together = [('user', 'tenant_id')]
+
+class AuditEvent(models.Model):
+    tenant_id = models.CharField(max_length=255, db_index=True)
+    user = models.ForeignKey('auth.User', null=True, on_delete=models.SET_NULL)
+    action = models.CharField(max_length=100)
+    object_id = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    detail = models.JSONField(default=dict)

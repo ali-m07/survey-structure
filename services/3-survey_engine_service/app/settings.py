@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
     'app.surveys',
     'app.customization',
@@ -96,7 +97,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # Changed to AllowAny for easier testing
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
@@ -106,3 +107,16 @@ CORS_ALLOWED_ORIGINS = config('CORS_ORIGINS', default='http://localhost:3000,htt
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins in development
 
+
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = config("EMAIL_HOST", default="localhost")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="surveys@localhost")
+SURVEY_WEB_URL = config("SURVEY_WEB_URL", default="http://localhost:3000")
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="http://localhost:3000").split(",")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
